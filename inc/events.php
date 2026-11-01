@@ -318,7 +318,7 @@ function sgnl_event_get( $post ) {
 	$post = get_post( $post );
 	$e    = array(
 		'id'    => $post->ID,
-		'title' => get_the_title( $post ),
+		'title' => html_entity_decode( (string) $post->post_title, ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
 	);
 	foreach ( array_keys( sgnl_event_fields() ) as $key ) {
 		$e[ $key ] = (string) get_post_meta( $post->ID, '_sgnl_' . $key, true );

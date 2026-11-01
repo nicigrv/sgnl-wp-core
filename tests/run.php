@@ -11,6 +11,17 @@
  */
 
 require __DIR__ . '/lib.php';
+
+/** Alle Inhalts-Streams eines PDFs entpacken */
+function gzuncompress_all( $pdf ) {
+	preg_match_all( '/stream\n(.*?)\nendstream/s', $pdf, $m );
+	$out = '';
+	foreach ( $m[1] as $s ) {
+		$d    = @gzuncompress( $s ); // phpcs:ignore
+		$out .= false === $d ? $s : $d;
+	}
+	return $out;
+}
 require_once SGNL_CORE_DIR . 'inc/migration/class-events-import.php';
 require_once SGNL_CORE_DIR . 'inc/migration/class-gallery-setup.php';
 require_once SGNL_CORE_DIR . 'inc/migration/class-db-import.php';
@@ -311,7 +322,7 @@ $old_link   = t_event( 'Vor drei Tagen mit Link', array( 'start' => t_day( -4 ),
 $res        = rest_do_request( new WP_REST_Request( 'GET', '/sgnl/v1/live' ) );
 t_eq( $res->get_status(), 200, 'REST-Endpunkt antwortet' );
 $names = wp_list_pluck( $res->get_data()['events'], 'name' );
-t_ok( in_array( 'Laufender Wettkampf "Lange Strecken"', $names, true ), 'Laufender Wettkampf erscheint' );
+t_ok( in_array( 'Laufender Wettkampf "Lange Strecken"', $names, true ), 'Laufender Wettkampf erscheint (Name ohne HTML-Zeichen)' );
 t_ok( in_array( 'Wettkampf heute ohne Links', $names, true ), 'Laufender Wettkampf ohne Links erscheint' );
 t_ok( in_array( 'Bezirksmeisterschaften Masters', $names, true ), 'Kommender Wettkampf mit Meldeergebnis erscheint' );
 t_ok( ! in_array( "Brandneuer Wettkampf mit O'Brien", $names, true ), 'Kommender Wettkampf ohne Links erscheint nicht' );
@@ -334,6 +345,7 @@ t_eq( substr( $pdf, 0, 8 ), '%PDF-1.4', 'PDF-Kopf' );
 t_eq( substr( $pdf, -5 ), '%%EOF', 'PDF-Ende' );
 t_ok( preg_match_all( '#/Type /Page /Parent#', $pdf ) > 1, 'Mehrere Seiten' );
 t_ok( substr_count( $pdf, '/S /URI' ) >= 35, 'Ausschreibungen sind verlinkt' );
+t_ok( false === strpos( gzuncompress_all( $pdf ), '&#' ), 'Keine HTML-Zeichen (&#…) im PDF' );
 file_put_contents( __DIR__ . '/ci/test.pdf', $pdf );
 
 /* =========================================================================
