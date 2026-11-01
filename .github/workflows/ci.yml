@@ -35,7 +35,7 @@ jobs:
       matrix:
         php: ['7.4', '8.1', '8.3']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -44,7 +44,7 @@ jobs:
         run: |
           errors=$(find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l 2>&1 | grep -v '^No syntax errors' || true)
           if [ -n "$errors" ]; then echo "$errors"; exit 1; fi
-          echo "Alle PHP-Dateien fehlerfrei.
+          echo "Alle PHP-Dateien fehlerfrei."
 
   wordpress:
     name: WordPress-Tests
@@ -63,11 +63,11 @@ jobs:
     env:
       WP_DIR: /tmp/wp
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: plugin
       - name: Theme (main) holen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: nicigrv/sgnl-wp-theme
           ref: main
@@ -100,9 +100,9 @@ jobs:
       - name: Seiten über HTTP prüfen
         run: "$WP_DIR/wp-content/plugins/sgnl-core/tests/ci/http.sh"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Browser-Tests (Playwright)
         run: |
@@ -131,7 +131,7 @@ jobs:
       group: release
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
