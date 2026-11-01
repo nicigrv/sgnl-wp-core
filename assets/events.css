@@ -109,3 +109,7 @@
 	.sgnl-events .sgnl-events__list { display: block !important; }
 	.sgnl-events .sgnl-events__tiles { display: none !important; }
 }
+
+/* Mehrere Unterlagen in der Liste */
+.sgnl-docs { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; }
+@media (max-width: 760px) { .sgnl-docs { flex-direction: row; flex-wrap: wrap; gap: .4rem 1rem; } }

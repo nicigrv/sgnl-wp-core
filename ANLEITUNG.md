@@ -73,6 +73,27 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
 - In der Terminliste: Filter „Terminplan“ / „Archiv JJJJ“, A/E/P zeigt Ausschreibung/Ergebnisse/Protokoll,
   „Duplizieren“ für wiederkehrende Veranstaltungen.
 
+## Datenbank + Live – ab Version 1.4.0
+- **Einmalig:** Werkzeuge → SG Neptun Umstellung → Schritt 7.
+  a) phpMyAdmin der alten Datenbank (datenbank.sgnl.de) → Exportieren → SQL, Datei hochladen →
+     Vorschau → „Wettkämpfe übernehmen“. Passende Termine werden ergänzt (Uhrzeiten, Meldeübersicht,
+     Meldeergebnis, Live-Timing, Protokoll, Nachrichten), fehlende angelegt.
+  b) „Datenbank einrichten“: Seite /datenbank/ mit den Reitern Live, Termine, Ergebnisse, Bestenliste,
+     Rekorde. Optional Trainerbereich /datenbank/trainer/ (Schwimmer, Meldungen) mit Passwort.
+     Menüpunkte und Links auf datenbank.sgnl.de zeigen danach auf die neue Seite (#live usw. bleibt).
+- **Termine sind die einzige Quelle**: Der Terminplan von webclub wird nicht mehr eingebunden.
+  Alles wird unter Dashboard → Termine eingetragen.
+- **Am Wettkampftag** beim Termin eintragen: Uhrzeit, Meldeübersicht, Meldeergebnis, Live-Timing,
+  später Protokoll/Ergebnisse. Im Kasten „Nachrichten (Live)“ kurze Infos veröffentlichen
+  (z. B. geänderte Startzeit) – erscheinen sofort groß auf der Live-Karte.
+- Im Reiter **Live** steht ein Wettkampf, solange er läuft, und vorher bzw. bis 48 Stunden danach,
+  sobald ein Link oder eine Nachricht eingetragen ist. Läuft gerade einer, pulsiert ein roter Punkt am Reiter.
+- **Rolle „Terminverwaltung“** (Benutzer → Neu): darf nur Termine pflegen und Dateien hochladen –
+  z. B. für Trainer, die bisher im Datenbank-Admin (Microsoft-Login) eingetragen haben.
+- Ergebnisse, Bestenliste, Rekorde, Schwimmer, Meldungen kommen weiter aus sgnl.webclub.app und laden
+  erst nach Zustimmung zu externen Inhalten.
+- Block „Datenbank“ (Reiter frei wählbar) und Block „Live-Wettkämpfe“ lassen sich auf jeder Seite einsetzen.
+
 ## Galerien – ab Version 1.3.0
 - **Einmalig:** Werkzeuge → SG Neptun Umstellung → Schritt 6 „Galerien einrichten“.
   Aus „Galerie 2024/2025/2026“ wird: /galerie/ (Jahre) → /galerie/2026/ (Alben) → /galerie/2026/dlp/ (Fotos).

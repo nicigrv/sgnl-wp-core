@@ -260,7 +260,8 @@ class SGNL_Events_Import {
 			foreach ( self::parse( $src ) as $e ) {
 				$merged = false;
 				foreach ( $events as &$x ) {
-					if ( self::same( $x, $e ) ) {
+					// Zeilen derselben Tabelle sind immer verschiedene Termine.
+					if ( $x['source'] !== $e['source'] && self::same( $x, $e ) ) {
 						foreach ( $e as $k => $v ) {
 							if ( '' === ( $x[ $k ] ?? '' ) && '' !== $v ) {
 								$x[ $k ] = $v;

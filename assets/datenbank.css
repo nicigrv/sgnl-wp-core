@@ -1,0 +1,115 @@
+/* SG Neptun – Datenbank (Reiter) */
+.sgnl-db {
+	--db-navy: var(--navy, #0B2A5B);
+	--db-deep: var(--navy-deep, #071D40);
+	--db-primary: var(--primary, #1F44B8);
+	--db-sky: var(--sky, #8FC9EC);
+	--db-water: var(--water, #EEF5FA);
+	--db-line: var(--line, #DCE6F0);
+	--db-muted: var(--muted, #5B6B83);
+	--db-red: var(--lane-red, #D7263D);
+	margin-block: 0 2rem;
+}
+
+/* Reiter auf dunklem "Beckenrand" */
+.sgnl-db__tabs {
+	position: relative;
+	padding: .55rem .55rem 0;
+	border-radius: var(--radius, 18px) var(--radius, 18px) 0 0;
+	background:
+		radial-gradient(120% 160% at 90% -40%, rgba(143, 201, 236, .28), transparent 60%),
+		linear-gradient(180deg, var(--db-navy), var(--db-deep));
+	isolation: isolate;
+	overflow: hidden;
+}
+.sgnl-db__tabs::before {
+	content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+	background-image: linear-gradient(90deg, rgba(255, 255, 255, .06) 1px, transparent 1px), linear-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px);
+	background-size: 30px 30px;
+	-webkit-mask-image: linear-gradient(180deg, #000, transparent 85%);
+	mask-image: linear-gradient(180deg, #000, transparent 85%);
+}
+.sgnl-db__tablist {
+	position: relative; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+	-webkit-overflow-scrolling: touch; padding-bottom: 10px; scroll-snap-type: x proximity;
+}
+.sgnl-db__tablist::-webkit-scrollbar { display: none; }
+.sgnl-db__tab {
+	appearance: none; border: 0; background: transparent; color: #B9D4EA; font: inherit; font-weight: 600; font-size: .98rem;
+	padding: .75rem 1.15rem; border-radius: 10px; cursor: pointer; white-space: nowrap; scroll-snap-align: center;
+	transition: color .18s, background .18s;
+}
+.sgnl-db__tab:hover { color: #fff; background: rgba(255, 255, 255, .07); }
+.sgnl-db__tab[aria-selected="true"] { color: #fff; background: rgba(255, 255, 255, .12); }
+.sgnl-db__tab:focus-visible { outline: 2px solid var(--db-sky); outline-offset: 2px; }
+.sgnl-db__tab.is-live-now::after {
+	content: ""; display: inline-block; width: 9px; height: 9px; margin-left: 9px; border-radius: 50%;
+	background: #ff3b3b; vertical-align: middle; animation: sgnl-db-pulse 1.6s ease-in-out infinite;
+}
+@keyframes sgnl-db-pulse {
+	0%, 100% { transform: scale(.92); box-shadow: 0 0 8px rgba(255, 59, 59, .9), 0 0 0 0 rgba(255, 59, 59, .7); }
+	50% { transform: scale(1.18); box-shadow: 0 0 14px rgba(255, 59, 59, 1), 0 0 0 10px rgba(255, 59, 59, 0); }
+}
+.sgnl-db__rope {
+	position: absolute; left: 0; bottom: 10px; height: 3px; width: 0; border-radius: 2px; pointer-events: none;
+	background: var(--lane, var(--db-sky));
+	transition: transform .32s cubic-bezier(.4, .9, .3, 1), width .32s cubic-bezier(.4, .9, .3, 1);
+}
+
+/* Rahmen */
+.sgnl-db__frame {
+	background: #fff; border: 1px solid var(--db-line); border-top: 0;
+	border-radius: 0 0 var(--radius, 18px) var(--radius, 18px);
+	box-shadow: var(--shadow, 0 1px 2px rgba(7, 29, 64, .06), 0 8px 24px rgba(7, 29, 64, .06));
+	overflow: hidden;
+}
+.sgnl-db__bar {
+	display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px;
+	border-bottom: 1px solid var(--db-line); background: linear-gradient(180deg, #fff, #F6FAFD);
+}
+.sgnl-db__label { margin-right: auto; font-weight: 700; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--db-primary); }
+.sgnl-db__act {
+	display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--db-line); background: #fff; color: var(--db-navy) !important;
+	font: inherit; font-size: .85rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; cursor: pointer; text-decoration: none !important;
+	transition: border-color .15s, color .15s, background .15s;
+}
+.sgnl-db__act:hover { border-color: var(--db-primary); color: var(--db-primary) !important; background: var(--db-water); }
+.sgnl-db__act[hidden] { display: none; }
+.sgnl-db__act .sgnl-ico { width: 15px; height: 15px; }
+@media (max-width: 600px) { .sgnl-db__bar .sgnl-db__act span { display: none; } .sgnl-db__bar .sgnl-db__act { padding: 8px 10px; } }
+
+.sgnl-db__panel[hidden] { display: none; }
+.sgnl-db__flow { padding: clamp(1rem, 3vw, 1.75rem); background: #FBFDFF; min-height: 300px; }
+.sgnl-db__flow .sgnl-events { margin: 0; }
+.sgnl-db__body {
+	position: relative; height: min(calc(100vh - 260px), 1400px); min-height: 420px;
+	overflow: auto; -webkit-overflow-scrolling: touch;
+}
+.sgnl-db__body[data-auto] { overflow: visible; min-height: 0; transition: height .2s ease; }
+.sgnl-db__body iframe { display: block; width: 1px; min-width: 100%; height: 100%; border: 0; background: #fff; }
+.sgnl-db__frame:fullscreen { overflow: auto; border-radius: 0; }
+.sgnl-db__frame:fullscreen .sgnl-db__body { height: calc(100vh - 56px) !important; overflow: auto !important; }
+
+/* Lade-/Fehler-/Freigabe-Zustände */
+.sgnl-db__state {
+	position: absolute; inset: 0; display: grid; align-content: start; justify-content: center; justify-items: center; gap: 12px;
+	text-align: center; padding: clamp(2.5rem, 9vh, 5rem) 24px 24px; background: #fff; z-index: 1;
+}
+.sgnl-db__state[hidden] { display: none; }
+.sgnl-db__state strong { font-size: 1.05rem; color: var(--db-navy); }
+.sgnl-db__state p { margin: 0; color: var(--db-muted); max-width: 46ch; font-size: .95rem; }
+.sgnl-db__gate { background: var(--db-water); }
+.sgnl-db__gate-actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+.sgnl-db__lanes { display: flex; gap: 6px; height: 34px; align-items: flex-end; }
+.sgnl-db__lanes i { width: 7px; height: 100%; border-radius: 4px; background: linear-gradient(180deg, var(--db-sky), var(--db-primary)); transform-origin: bottom; animation: sgnl-db-swim 1.1s ease-in-out infinite; }
+.sgnl-db__lanes i:nth-child(2) { animation-delay: .12s; }
+.sgnl-db__lanes i:nth-child(3) { animation-delay: .24s; }
+.sgnl-db__lanes i:nth-child(4) { animation-delay: .36s; }
+.sgnl-db__lanes i:nth-child(5) { animation-delay: .48s; }
+@keyframes sgnl-db-swim { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+	.sgnl-db__tab.is-live-now::after, .sgnl-db__lanes i { animation: none; }
+	.sgnl-db__rope { transition: none; }
+}
+.sgnl-db__body:has(> .sgnl-db__gate:not([hidden])) { height: 400px; }

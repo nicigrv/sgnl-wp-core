@@ -94,6 +94,36 @@ function sgnl_migration_page() {
 			SGNL_Gallery_Setup::undo();
 			$messages[] = array( 'success', __( 'Galerie-Einrichtung rückgängig gemacht.', 'sgnl-core' ) );
 		}
+		if ( 'db_preview' === $action ) {
+			$file = $_FILES['sgnl_sql'] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			if ( ! $file || UPLOAD_ERR_OK !== (int) $file['error'] || ! is_uploaded_file( $file['tmp_name'] ) ) {
+				$messages[] = array( 'error', __( 'Bitte die .sql-Datei aus phpMyAdmin auswählen.', 'sgnl-core' ) );
+			} else {
+				$rows = SGNL_DB_Import::parse( (string) file_get_contents( $file['tmp_name'] ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+				if ( ! $rows ) {
+					$messages[] = array( 'error', __( 'In der Datei wurden keine Wettkämpfe gefunden (Tabelle „wettkaempfe“).', 'sgnl-core' ) );
+				} else {
+					set_transient( 'sgnl_db_preview_' . get_current_user_id(), $rows, HOUR_IN_SECONDS );
+				}
+			}
+		}
+		if ( 'db_import' === $action ) {
+			$rows = get_transient( 'sgnl_db_preview_' . get_current_user_id() );
+			if ( is_array( $rows ) ) {
+				$r = SGNL_DB_Import::run( $rows );
+				delete_transient( 'sgnl_db_preview_' . get_current_user_id() );
+				$messages[] = array( 'success', sprintf( __( 'Wettkämpfe übernommen: %1$d Termine ergänzt, %2$d neu angelegt, %3$d Nachrichten.', 'sgnl-core' ), $r['merged'], $r['created'], $r['messages'] ) );
+			}
+		}
+		if ( 'db_setup' === $action ) {
+			$pw = sanitize_text_field( wp_unslash( $_POST['sgnl_trainer_pw'] ?? '' ) );
+			$r  = SGNL_DB_Import::setup( $pw );
+			$messages[] = array( 'success', sprintf( __( 'Datenbank eingerichtet: Seite %1$s%2$s, %3$d Menüpunkte und %4$d Inhalte umgestellt.', 'sgnl-core' ), wp_make_link_relative( get_permalink( $r['page'] ) ), $r['trainer'] ? ' + ' . wp_make_link_relative( get_permalink( $r['trainer'] ) ) : '', $r['menu'], $r['posts'] ) );
+		}
+		if ( 'db_undo' === $action ) {
+			SGNL_DB_Import::undo();
+			$messages[] = array( 'success', __( 'Datenbank-Einrichtung rückgängig gemacht.', 'sgnl-core' ) );
+		}
 		if ( 'cleanup' === $action ) {
 			if ( empty( $_POST['sgnl_cleanup_ok'] ) ) {
 				$messages[] = array( 'error', __( 'Bitte bestätige das Aufräumen.', 'sgnl-core' ) );
@@ -227,6 +257,7 @@ function sgnl_migration_page() {
 
 		<?php sgnl_events_import_card(); ?>
 		<?php sgnl_gallery_setup_card(); ?>
+		<?php sgnl_db_import_card(); ?>
 
 		<div class="card">
 			<h2><span class="step">7</span><?php esc_html_e( 'Aufräumen (optional)', 'sgnl-core' ); ?></h2>
@@ -286,6 +317,9 @@ add_action( 'admin_notices', function () {
 	}
 	if ( ! SGNL_Gallery_Setup::done() && SGNL_Gallery_Setup::pending() ) {
 		$todo[] = __( 'Galerien als Kacheln einrichten (/galerie/)', 'sgnl-core' );
+	}
+	if ( ! SGNL_DB_Import::done() && SGNL_DB_Import::references()['menu'] ) {
+		$todo[] = __( 'Datenbank (datenbank.sgnl.de) in die Website übernehmen', 'sgnl-core' );
 	}
 	if ( ! $todo ) {
 		return;
@@ -390,6 +424,72 @@ function sgnl_gallery_setup_card() {
 			<form method="post" style="margin-top:.8rem" onsubmit="return confirm('<?php echo esc_js( __( 'Galerie-Einrichtung rückgängig machen?', 'sgnl-core' ) ); ?>');">
 				<?php wp_nonce_field( 'sgnl_migration' ); ?>
 				<button class="button" name="sgnl_action" value="gallery_undo"><?php esc_html_e( 'Galerie-Einrichtung rückgängig machen', 'sgnl-core' ); ?></button>
+			</form>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
+
+/**
+ * Karte "Datenbank".
+ */
+function sgnl_db_import_card() {
+	$rows = get_transient( 'sgnl_db_preview_' . get_current_user_id() );
+	$refs = SGNL_DB_Import::references();
+	$done = SGNL_DB_Import::done();
+	?>
+	<div class="card" id="sgnl-db">
+		<h2><span class="step">7</span><?php esc_html_e( 'Datenbank (datenbank.sgnl.de) übernehmen', 'sgnl-core' ); ?></h2>
+		<p><?php esc_html_e( 'Die Wettkämpfe werden Teil der Termine: Meldeübersicht, Meldeergebnis, Live-Timing, Protokoll und Nachrichten pflegst du ab jetzt direkt beim Termin. Die Seite /datenbank/ zeigt Live, Termine, Ergebnisse, Bestenliste und Rekorde als Reiter.', 'sgnl-core' ); ?></p>
+
+		<h3><?php esc_html_e( 'a) Wettkämpfe übernehmen', 'sgnl-core' ); ?></h3>
+		<?php if ( is_array( $rows ) && $rows ) : ?>
+			<table class="widefat striped">
+				<thead><tr><th><?php esc_html_e( 'Datum', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Wettkampf', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Links', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Wird …', 'sgnl-core' ); ?></th></tr></thead>
+				<tbody>
+				<?php $map = SGNL_DB_Import::assign( $rows ); foreach ( $rows as $r ) : $m = $map[ $r['wk_id'] ]; ?>
+					<tr>
+						<td><?php echo esc_html( sgnl_event_date_label( array( 'start' => $r['start'], 'end' => $r['end'] ), true ) . ( $r['start_time'] ? ' · ' . $r['start_time'] . ( $r['end_time'] ? '–' . $r['end_time'] : '' ) : '' ) ); ?></td>
+						<td><?php echo esc_html( $r['title'] . ( $r['ort'] ? ' (' . $r['ort'] . ')' : '' ) ); ?><?php echo $r['nachrichten'] ? '<br><small>' . (int) count( $r['nachrichten'] ) . ' ' . esc_html__( 'Nachrichten', 'sgnl-core' ) . '</small>' : ''; ?></td>
+						<td><?php echo esc_html( implode( ', ', array_filter( array( $r['meldeuebersicht'] ? 'Meldeübersicht' : '', $r['meldeergebnis'] ? 'Meldeergebnis' : '', $r['livetiming'] ? 'Live-Timing' : '', $r['protokoll'] ? 'Protokoll' : '' ) ) ) ); ?></td>
+						<td><?php echo $m ? esc_html__( 'ergänzt:', 'sgnl-core' ) . ' <a href="' . esc_url( get_edit_post_link( $m ) ) . '">' . esc_html( get_the_title( $m ) ) . '</a>' : esc_html__( 'neu angelegt', 'sgnl-core' ); ?></td>
+					</tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
+			<form method="post" style="margin-top:.8rem">
+				<?php wp_nonce_field( 'sgnl_migration' ); ?>
+				<button class="button button-primary" name="sgnl_action" value="db_import"><?php esc_html_e( 'Wettkämpfe übernehmen', 'sgnl-core' ); ?></button>
+			</form>
+		<?php else : ?>
+			<?php if ( get_option( 'sgnl_db_imported' ) ) : ?>
+				<p class="ok"><?php esc_html_e( 'Wettkämpfe wurden übernommen. Erneut einlesen ist möglich – vorhandene Termine werden nur ergänzt.', 'sgnl-core' ); ?></p>
+			<?php endif; ?>
+			<form method="post" enctype="multipart/form-data">
+				<?php wp_nonce_field( 'sgnl_migration' ); ?>
+				<p><?php esc_html_e( 'phpMyAdmin der bisherigen Datenbank (datenbank.sgnl.de) öffnen → Exportieren → SQL. Datei hier auswählen:', 'sgnl-core' ); ?></p>
+				<p><input type="file" name="sgnl_sql" accept=".sql,text/plain"> <button class="button" name="sgnl_action" value="db_preview"><?php esc_html_e( 'Vorschau', 'sgnl-core' ); ?></button></p>
+			</form>
+		<?php endif; ?>
+
+		<h3><?php esc_html_e( 'b) Seite /datenbank/ einrichten', 'sgnl-core' ); ?></h3>
+		<?php if ( $done ) : ?>
+			<p class="ok"><?php printf( esc_html__( 'Eingerichtet: %s', 'sgnl-core' ), '<a href="' . esc_url( home_url( '/datenbank/' ) ) . '" target="_blank">/datenbank/</a>' ); ?></p>
+			<form method="post" onsubmit="return confirm('<?php echo esc_js( __( 'Datenbank-Einrichtung rückgängig machen?', 'sgnl-core' ) ); ?>');">
+				<?php wp_nonce_field( 'sgnl_migration' ); ?>
+				<button class="button" name="sgnl_action" value="db_undo"><?php esc_html_e( 'Rückgängig machen', 'sgnl-core' ); ?></button>
+			</form>
+		<?php else : ?>
+			<ul class="sgnl-log">
+				<li><?php esc_html_e( 'Seite „Datenbank“ (/datenbank/) mit Reitern Live, Termine, Ergebnisse, Bestenliste, Rekorde', 'sgnl-core' ); ?></li>
+				<li><?php printf( esc_html__( '%d Menüpunkte und %d Inhalte, die auf datenbank.sgnl.de zeigen, werden auf die neue Seite umgestellt (z. B. #live bleibt erhalten)', 'sgnl-core' ), count( $refs['menu'] ), count( $refs['posts'] ) ); ?></li>
+				<li><?php esc_html_e( 'Optional: Trainerbereich (/datenbank/trainer/) mit Schwimmer und Meldungen, geschützt mit einem Passwort', 'sgnl-core' ); ?></li>
+			</ul>
+			<form method="post">
+				<?php wp_nonce_field( 'sgnl_migration' ); ?>
+				<p><label><?php esc_html_e( 'Passwort für den Trainerbereich (leer = keinen anlegen):', 'sgnl-core' ); ?><br><input type="text" name="sgnl_trainer_pw" class="regular-text" autocomplete="off"></label></p>
+				<button class="button button-primary" name="sgnl_action" value="db_setup"><?php esc_html_e( 'Datenbank einrichten', 'sgnl-core' ); ?></button>
 			</form>
 		<?php endif; ?>
 	</div>

@@ -18,14 +18,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 /** Felder eines Termins (Meta-Schlüssel => Bezeichnung) */
 function sgnl_event_fields() {
 	return array(
-		'start'         => __( 'Datum von', 'sgnl-core' ),
-		'end'           => __( 'Datum bis', 'sgnl-core' ),
-		'ort'           => __( 'Ort', 'sgnl-core' ),
-		'bahn'          => __( 'Bahn', 'sgnl-core' ),
-		'team'          => __( 'Mannschaft', 'sgnl-core' ),
-		'ausschreibung' => __( 'Ausschreibung', 'sgnl-core' ),
-		'ergebnis'      => __( 'Ergebnisse', 'sgnl-core' ),
-		'protokoll'     => __( 'Protokoll', 'sgnl-core' ),
+		'start'           => __( 'Datum von', 'sgnl-core' ),
+		'end'             => __( 'Datum bis', 'sgnl-core' ),
+		'start_time'      => __( 'Uhrzeit von', 'sgnl-core' ),
+		'end_time'        => __( 'Uhrzeit bis', 'sgnl-core' ),
+		'ort'             => __( 'Ort', 'sgnl-core' ),
+		'bahn'            => __( 'Bahn', 'sgnl-core' ),
+		'team'            => __( 'Mannschaft', 'sgnl-core' ),
+		'ausschreibung'   => __( 'Ausschreibung', 'sgnl-core' ),
+		'meldeuebersicht' => __( 'Meldeübersicht', 'sgnl-core' ),
+		'meldeergebnis'   => __( 'Meldeergebnis', 'sgnl-core' ),
+		'livetiming'      => __( 'Live-Timing', 'sgnl-core' ),
+		'ergebnis'        => __( 'Ergebnisse', 'sgnl-core' ),
+		'protokoll'       => __( 'Protokoll', 'sgnl-core' ),
 	);
 }
 
@@ -56,7 +61,7 @@ add_action( 'init', function () {
 		'menu_icon'       => 'dashicons-calendar-alt',
 		'menu_position'   => 20,
 		'supports'        => array( 'title', 'revisions' ),
-		'capability_type' => 'page',
+		'capability_type' => array( 'sgnl_event', 'sgnl_events' ),
 		'map_meta_cap'    => true,
 	) );
 
@@ -67,7 +72,7 @@ add_action( 'init', function () {
 			'show_in_rest'      => false,
 			'revisions_enabled' => true,
 			'auth_callback'     => function () {
-				return current_user_can( 'edit_pages' );
+				return current_user_can( 'edit_sgnl_events' );
 			},
 		) );
 	}
@@ -166,7 +171,10 @@ function sgnl_event_get( $post ) {
 	if ( $e['end'] && $e['end'] < $e['start'] ) {
 		$e['end'] = '';
 	}
-	$e['last'] = $e['end'] ? $e['end'] : $e['start'];
+	$e['last']     = $e['end'] ? $e['end'] : $e['start'];
+	$e['messages'] = sgnl_event_messages( $post->ID );
+	$e['ts_start'] = $e['start'] ? sgnl_event_ts( $e['start'], $e['start_time'] ? $e['start_time'] : '00:00' ) : 0;
+	$e['ts_end']   = $e['start'] ? sgnl_event_ts( $e['last'], $e['end_time'] ? $e['end_time'] : '23:59' ) : 0;
 	$e['past'] = $e['last'] && $e['last'] < sgnl_events_today();
 	$e['year'] = $e['start'] ? (int) substr( $e['start'], 0, 4 ) : 0;
 	return $e;
@@ -313,6 +321,10 @@ function sgnl_events_icon( $name ) {
 		'doc'    => '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
 		'list'   => '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',
 		'grid'   => '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
+		'cal'    => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+		'note'   => '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+		'ext'    => '<path d="M14 4h6v6"/><path d="M10 14 20 4"/><path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5"/>',
+		'live'   => '<circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 16.2a6 6 0 0 0 0-8.4M5 5a10 10 0 0 0 0 14M19 19a10 10 0 0 0 0-14"/>',
 		'trophy' => '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4.5a3 3 0 0 0 3.5 4M16 6h3.5a3 3 0 0 1-3.5 4M12 13v4M8.5 20h7M10 17h4"/>',
 	);
 	return '<svg class="sgnl-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . ( $paths[ $name ] ?? '' ) . '</svg>';
@@ -333,6 +345,63 @@ function sgnl_events_doc_link( $url, $label, $icon = 'doc', $class = '' ) {
 	}
 	$ext = sgnl_is_own_host( $url ) ? '' : ' target="_blank" rel="noopener"';
 	return '<a class="sgnl-doc' . ( $class ? ' ' . esc_attr( $class ) : '' ) . '" href="' . esc_url( $url ) . '"' . $ext . '>' . sgnl_events_icon( $icon ) . '<span>' . esc_html( $label ) . '</span></a>';
+}
+
+/**
+ * Alle Unterlagen eines kommenden Termins (Ausschreibung, Meldungen, Live-Timing).
+ *
+ * @param array $e     Termin.
+ * @param bool  $tiles Kachel-Ansicht (erster Link hervorgehoben).
+ * @return string
+ */
+function sgnl_events_doc_links( array $e, $tiles = false ) {
+	$out   = '';
+	$first = true;
+	foreach ( array(
+		'ausschreibung'   => array( __( 'Ausschreibung', 'sgnl-core' ), 'doc' ),
+		'meldeuebersicht' => array( __( 'Meldeübersicht', 'sgnl-core' ), 'list' ),
+		'meldeergebnis'   => array( __( 'Meldeergebnis', 'sgnl-core' ), 'team' ),
+		'livetiming'      => array( __( 'Live-Timing', 'sgnl-core' ), 'live' ),
+		'protokoll'       => array( __( 'Protokoll', 'sgnl-core' ), 'doc' ),
+	) as $k => $conf ) {
+		if ( empty( $e[ $k ] ) ) {
+			continue;
+		}
+		$out  .= sgnl_events_doc_link( $e[ $k ], $conf[0], $conf[1], $tiles && $first ? 'is-primary' : '' );
+		$first = false;
+	}
+	return $tiles || ! $out ? $out : '<span class="sgnl-docs">' . $out . '</span>';
+}
+
+/**
+ * Datum + Uhrzeit (Zeitzone der Website) als Zeitstempel.
+ *
+ * @param string $ymd  Datum.
+ * @param string $time Uhrzeit HH:MM.
+ * @return int
+ */
+function sgnl_event_ts( $ymd, $time ) {
+	try {
+		$dt = new DateTimeImmutable( $ymd . ' ' . $time . ':00', wp_timezone() );
+		return $dt->getTimestamp();
+	} catch ( Exception $ex ) {
+		return 0;
+	}
+}
+
+/**
+ * Nachrichten eines Termins (neueste zuerst).
+ *
+ * @param int $id Termin.
+ * @return array[] id, text, autor, zeit
+ */
+function sgnl_event_messages( $id ) {
+	$m = get_post_meta( $id, '_sgnl_messages', true );
+	$m = is_array( $m ) ? array_values( $m ) : array();
+	usort( $m, function ( $a, $b ) {
+		return (int) $b['zeit'] - (int) $a['zeit'];
+	} );
+	return $m;
 }
 
 /**
@@ -403,7 +472,7 @@ function sgnl_events_render( $a ) {
 		$html .= sgnl_events_render_tiles( $events, $archive );
 	}
 
-	if ( current_user_can( 'edit_pages' ) ) {
+	if ( current_user_can( 'edit_sgnl_events' ) ) {
 		$html .= '<p class="sgnl-events__edit"><a href="' . esc_url( admin_url( 'edit.php?post_type=sgnl_event' . ( $archive ? '&sgnl_zeit=' . $year : '&sgnl_zeit=kommend' ) ) ) . '">' . esc_html__( 'Termine verwalten', 'sgnl-core' ) . '</a></p>';
 	}
 
@@ -420,7 +489,7 @@ function sgnl_events_render( $a ) {
 function sgnl_events_render_list( array $events, $archive ) {
 	$cols = $archive
 		? array( 'date' => __( 'Datum', 'sgnl-core' ), 'title' => __( 'Veranstaltung', 'sgnl-core' ), 'ort' => __( 'Ort', 'sgnl-core' ), 'protokoll' => __( 'Protokoll', 'sgnl-core' ), 'ergebnis' => __( 'Ergebnisse', 'sgnl-core' ) )
-		: array( 'date' => __( 'Datum', 'sgnl-core' ), 'title' => __( 'Veranstaltung', 'sgnl-core' ), 'ort' => __( 'Ort', 'sgnl-core' ), 'bahn' => __( 'Bahn', 'sgnl-core' ), 'team' => __( 'Mannschaft', 'sgnl-core' ), 'ausschreibung' => __( 'Ausschreibung', 'sgnl-core' ) );
+		: array( 'date' => __( 'Datum', 'sgnl-core' ), 'title' => __( 'Veranstaltung', 'sgnl-core' ), 'ort' => __( 'Ort', 'sgnl-core' ), 'bahn' => __( 'Bahn', 'sgnl-core' ), 'team' => __( 'Mannschaft', 'sgnl-core' ), 'docs' => __( 'Unterlagen', 'sgnl-core' ) );
 
 	$h = '<figure class="wp-block-table is-style-sgnl-table sgnl-events__list"><table><thead><tr>';
 	foreach ( $cols as $k => $label ) {
@@ -445,8 +514,8 @@ function sgnl_events_render_list( array $events, $archive ) {
 				case 'title':
 					$val = '<strong>' . esc_html( $e['title'] ) . '</strong>';
 					break;
-				case 'ausschreibung':
-					$val = sgnl_events_doc_link( $e['ausschreibung'], __( 'Ausschreibung', 'sgnl-core' ) );
+				case 'docs':
+					$val = sgnl_events_doc_links( $e );
 					break;
 				case 'protokoll':
 					$val = sgnl_events_doc_link( $e['protokoll'], __( 'Protokoll', 'sgnl-core' ) );
@@ -504,7 +573,7 @@ function sgnl_events_render_tiles( array $events, $archive ) {
 
 		$links = $archive
 			? sgnl_events_doc_link( $e['ergebnis'], __( 'Ergebnisse', 'sgnl-core' ), 'trophy', 'is-primary' ) . sgnl_events_doc_link( $e['protokoll'], __( 'Protokoll', 'sgnl-core' ) )
-			: sgnl_events_doc_link( $e['ausschreibung'], __( 'Ausschreibung', 'sgnl-core' ), 'doc', 'is-primary' );
+			: sgnl_events_doc_links( $e, true );
 
 		$h .= '<article class="sgnl-event">'
 			. '<div class="sgnl-event__date' . $long . '"><span class="sgnl-event__wd">' . esc_html( $wd ) . '</span><span class="sgnl-event__days">' . esc_html( $days ) . '</span><span class="sgnl-event__month">' . esc_html( $month ) . '</span></div>'
@@ -674,6 +743,8 @@ add_filter( 'enter_title_here', function ( $text, $post ) {
 
 add_action( 'add_meta_boxes_sgnl_event', function () {
 	add_meta_box( 'sgnl_event_details', __( 'Termin', 'sgnl-core' ), 'sgnl_event_details_box', 'sgnl_event', 'normal', 'high' );
+	add_meta_box( 'sgnl_event_live', __( 'Meldungen & Live-Timing (Datenbank → Live)', 'sgnl-core' ), 'sgnl_event_live_box', 'sgnl_event', 'normal', 'default' );
+	add_meta_box( 'sgnl_event_msgs', __( 'Nachrichten (Live)', 'sgnl-core' ), 'sgnl_event_msgs_box', 'sgnl_event', 'normal', 'default' );
 	add_meta_box( 'sgnl_event_after', __( 'Nach der Veranstaltung (Archiv)', 'sgnl-core' ), 'sgnl_event_after_box', 'sgnl_event', 'normal', 'default' );
 } );
 
@@ -685,7 +756,8 @@ add_action( 'admin_enqueue_scripts', function ( $hook ) {
 	wp_enqueue_style( 'sgnl-events-admin', SGNL_CORE_URL . 'assets/events-admin.css', array(), sgnl_core_ver( 'assets/events-admin.css' ) );
 	if ( in_array( $hook, array( 'post.php', 'post-new.php' ), true ) ) {
 		wp_enqueue_media();
-		wp_enqueue_script( 'sgnl-events-admin', SGNL_CORE_URL . 'assets/events-admin.js', array( 'jquery' ), sgnl_core_ver( 'assets/events-admin.js' ), true );
+		wp_enqueue_script( 'sgnl-markdown', SGNL_CORE_URL . 'assets/markdown.js', array(), sgnl_core_ver( 'assets/markdown.js' ), true );
+		wp_enqueue_script( 'sgnl-events-admin', SGNL_CORE_URL . 'assets/events-admin.js', array( 'jquery', 'sgnl-markdown' ), sgnl_core_ver( 'assets/events-admin.js' ), true );
 	}
 } );
 
@@ -771,6 +843,14 @@ function sgnl_event_details_box( $post ) {
 			<input type="date" id="sgnl-ev-end" name="sgnl_event[end]" value="<?php echo esc_attr( $e['end'] ); ?>" min="<?php echo esc_attr( $e['start'] ); ?>">
 		</div>
 		<div class="sgnl-ev__field">
+			<label for="sgnl-ev-start-time"><?php esc_html_e( 'Uhrzeit Beginn', 'sgnl-core' ); ?> <small><?php esc_html_e( '(optional, für „Live jetzt“)', 'sgnl-core' ); ?></small></label>
+			<input type="time" id="sgnl-ev-start-time" name="sgnl_event[start_time]" value="<?php echo esc_attr( $e['start_time'] ); ?>">
+		</div>
+		<div class="sgnl-ev__field">
+			<label for="sgnl-ev-end-time"><?php esc_html_e( 'Uhrzeit Ende', 'sgnl-core' ); ?> <small><?php esc_html_e( '(am letzten Tag)', 'sgnl-core' ); ?></small></label>
+			<input type="time" id="sgnl-ev-end-time" name="sgnl_event[end_time]" value="<?php echo esc_attr( $e['end_time'] ); ?>">
+		</div>
+		<div class="sgnl-ev__field">
 			<label for="sgnl-ev-ort"><?php esc_html_e( 'Ort', 'sgnl-core' ); ?></label>
 			<input type="text" class="widefat" id="sgnl-ev-ort" name="sgnl_event[ort]" value="<?php echo esc_attr( $e['ort'] ); ?>" list="sgnl-ev-list-ort" autocomplete="off">
 		</div>
@@ -786,6 +866,93 @@ function sgnl_event_details_box( $post ) {
 	</div>
 	<?php
 }
+
+/**
+ * Meldungen & Live-Timing.
+ *
+ * @param WP_Post $post Termin.
+ */
+function sgnl_event_live_box( $post ) {
+	$e = sgnl_event_get( $post );
+	echo '<p class="description" style="margin-top:0">' . esc_html__( 'Sobald hier ein Link steht, erscheint der Wettkampf im Reiter „Live“ der Datenbank – bis 48 Stunden nach dem Ende. Während der Wettkampf läuft, wird er dort als „Live jetzt“ markiert.', 'sgnl-core' ) . '</p>';
+	echo '<div class="sgnl-ev">';
+	sgnl_events_file_field( 'meldeuebersicht', $e['meldeuebersicht'], __( 'Meldeübersicht', 'sgnl-core' ) );
+	sgnl_events_file_field( 'meldeergebnis', $e['meldeergebnis'], __( 'Meldeergebnis', 'sgnl-core' ) );
+	sgnl_events_file_field( 'livetiming', $e['livetiming'], __( 'Live-Timing', 'sgnl-core' ) );
+	echo '</div>';
+}
+
+/**
+ * Nachrichten (z. B. geänderte Startzeit) – werden im Live-Reiter groß angezeigt.
+ *
+ * @param WP_Post $post Termin.
+ */
+function sgnl_event_msgs_box( $post ) {
+	if ( 'auto-draft' === $post->post_status ) {
+		echo '<p>' . esc_html__( 'Nach dem ersten Speichern können hier Nachrichten veröffentlicht werden.', 'sgnl-core' ) . '</p>';
+		return;
+	}
+	?>
+	<div class="sgnl-msgs" data-post="<?php echo (int) $post->ID; ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'sgnl_event_msg_' . $post->ID ) ); ?>">
+		<p class="description" style="margin-top:0"><?php esc_html_e( 'Kurze Info für den Wettkampftag, z. B. geänderte Startzeit. Erscheint sofort groß auf der Live-Karte. Formatierung: **fett**, *kursiv*, # Überschrift, - Liste, [Text](https://…).', 'sgnl-core' ); ?></p>
+		<textarea class="widefat sgnl-msgs__input" id="sgnl-msg-text" rows="3" maxlength="1000" placeholder="<?php esc_attr_e( 'z. B. **Einschwimmen** heute erst ab 8:30 Uhr', 'sgnl-core' ); ?>"></textarea>
+		<div class="sgnl-msgs__preview" data-md-preview="sgnl-msg-text" hidden><span><?php esc_html_e( 'Vorschau', 'sgnl-core' ); ?></span><div data-md-out></div></div>
+		<p><button type="button" class="button button-primary sgnl-msgs__add"><?php esc_html_e( 'Nachricht veröffentlichen', 'sgnl-core' ); ?></button> <span class="sgnl-msgs__status" aria-live="polite"></span></p>
+		<div class="sgnl-msgs__list"><?php echo sgnl_event_messages_admin_html( $post->ID ); // phpcs:ignore WordPress.Security.EscapeOutput ?></div>
+	</div>
+	<?php
+}
+
+/**
+ * Liste der Nachrichten im Dashboard.
+ *
+ * @param int $id Termin.
+ * @return string
+ */
+function sgnl_event_messages_admin_html( $id ) {
+	$msgs = sgnl_event_messages( $id );
+	if ( ! $msgs ) {
+		return '<p class="sgnl-msgs__empty">' . esc_html__( 'Noch keine Nachrichten.', 'sgnl-core' ) . '</p>';
+	}
+	$h = '';
+	foreach ( $msgs as $m ) {
+		$h .= '<div class="sgnl-msg"><div class="sgnl-msg__text" data-md>' . esc_html( $m['text'] ) . '</div>'
+			. '<div class="sgnl-msg__meta"><strong>' . esc_html( $m['autor'] ) . '</strong> · ' . esc_html( wp_date( 'd.m.Y, H:i', (int) $m['zeit'] ) ) . ' Uhr'
+			. ' <button type="button" class="button-link sgnl-msg__del" data-id="' . esc_attr( $m['id'] ) . '">' . esc_html__( 'Löschen', 'sgnl-core' ) . '</button></div></div>';
+	}
+	return $h;
+}
+
+/* Nachrichten hinzufügen/löschen (ohne die Seite neu zu laden) */
+add_action( 'wp_ajax_sgnl_event_msg', function () {
+	$id = absint( $_POST['post'] ?? 0 );
+	if ( ! $id || 'sgnl_event' !== get_post_type( $id ) || ! check_ajax_referer( 'sgnl_event_msg_' . $id, 'nonce', false ) || ! current_user_can( 'edit_post', $id ) ) {
+		wp_send_json_error( array( 'message' => __( 'Keine Berechtigung.', 'sgnl-core' ) ), 403 );
+	}
+	$msgs = get_post_meta( $id, '_sgnl_messages', true );
+	$msgs = is_array( $msgs ) ? $msgs : array();
+	$op   = sanitize_key( $_POST['op'] ?? '' );
+	if ( 'add' === $op ) {
+		$text = trim( sanitize_textarea_field( wp_unslash( $_POST['text'] ?? '' ) ) );
+		if ( '' === $text ) {
+			wp_send_json_error( array( 'message' => __( 'Bitte einen Text eingeben.', 'sgnl-core' ) ) );
+		}
+		$user   = wp_get_current_user();
+		$msgs[] = array(
+			'id'    => wp_generate_password( 10, false ),
+			'text'  => mb_substr( $text, 0, 1000 ),
+			'autor' => $user->display_name ? $user->display_name : $user->user_login,
+			'zeit'  => time(),
+		);
+	} elseif ( 'delete' === $op ) {
+		$del  = sanitize_text_field( wp_unslash( $_POST['id'] ?? '' ) );
+		$msgs = array_values( array_filter( $msgs, function ( $m ) use ( $del ) {
+			return ( $m['id'] ?? '' ) !== $del;
+		} ) );
+	}
+	update_post_meta( $id, '_sgnl_messages', $msgs );
+	wp_send_json_success( array( 'html' => sgnl_event_messages_admin_html( $id ) ) );
+} );
 
 /**
  * Felder fürs Archiv.
@@ -837,7 +1004,11 @@ function sgnl_event_save_fields( $post_id, array $in ) {
 	foreach ( array( 'ort', 'bahn', 'team' ) as $k ) {
 		$vals[ $k ] = sanitize_text_field( $in[ $k ] ?? '' );
 	}
-	foreach ( array( 'ausschreibung', 'ergebnis', 'protokoll' ) as $k ) {
+	foreach ( array( 'start_time', 'end_time' ) as $k ) {
+		$v          = trim( (string) ( $in[ $k ] ?? '' ) );
+		$vals[ $k ] = preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', substr( $v, 0, 5 ) ) ? substr( $v, 0, 5 ) : '';
+	}
+	foreach ( array( 'ausschreibung', 'meldeuebersicht', 'meldeergebnis', 'livetiming', 'ergebnis', 'protokoll' ) as $k ) {
 		$vals[ $k ] = esc_url_raw( trim( (string) ( $in[ $k ] ?? '' ) ) );
 	}
 	foreach ( $vals as $k => $v ) {
@@ -907,7 +1078,7 @@ add_action( 'manage_sgnl_event_posts_custom_column', function ( $col, $id ) {
 	$e = sgnl_event_get( $id );
 	switch ( $col ) {
 		case 'sgnl_date':
-			echo $e['start'] ? '<strong>' . esc_html( sgnl_event_date_label( $e, true ) ) . '</strong><br><small>' . esc_html( sgnl_weekday( $e['start'] ) . ( $e['end'] ? ' – ' . sgnl_weekday( $e['end'] ) : '' ) ) . '</small>' : '<span class="sgnl-ev-missing">' . esc_html__( 'Datum fehlt', 'sgnl-core' ) . '</span>';
+			echo $e['start'] ? '<strong>' . esc_html( sgnl_event_date_label( $e, true ) ) . '</strong><br><small>' . esc_html( sgnl_weekday( $e['start'] ) . ( $e['end'] ? ' – ' . sgnl_weekday( $e['end'] ) : '' ) . ( $e['start_time'] ? ' · ' . $e['start_time'] . ( $e['end_time'] ? '–' . $e['end_time'] : '' ) . ' Uhr' : '' ) ) . '</small>' : '<span class="sgnl-ev-missing">' . esc_html__( 'Datum fehlt', 'sgnl-core' ) . '</span>';
 			break;
 		case 'sgnl_ort':
 			echo esc_html( $e['ort'] . ( $e['bahn'] ? ' · ' . $e['bahn'] : '' ) );
@@ -916,7 +1087,7 @@ add_action( 'manage_sgnl_event_posts_custom_column', function ( $col, $id ) {
 			echo esc_html( $e['team'] );
 			break;
 		case 'sgnl_docs':
-			foreach ( array( 'ausschreibung' => 'A', 'ergebnis' => 'E', 'protokoll' => 'P' ) as $k => $abbr ) {
+			foreach ( array( 'ausschreibung' => 'A', 'meldeergebnis' => 'M', 'livetiming' => 'L', 'ergebnis' => 'E', 'protokoll' => 'P' ) as $k => $abbr ) {
 				$label = sgnl_event_fields()[ $k ];
 				if ( $e[ $k ] ) {
 					printf( '<a class="sgnl-ev-doc is-set" href="%s" target="_blank" title="%s">%s</a>', esc_url( $e[ $k ] ), esc_attr( $label ), esc_html( $abbr ) );
@@ -1026,7 +1197,7 @@ add_action( 'admin_post_sgnl_event_dup', function () {
 	) );
 	if ( $new && ! is_wp_error( $new ) ) {
 		// Datum und Ergebnisse/Protokoll gehören zur alten Veranstaltung – nicht übernehmen.
-		sgnl_event_save_fields( $new, array_merge( $e, array( 'start' => '', 'end' => '', 'ergebnis' => '', 'protokoll' => '', 'ausschreibung' => '' ) ) );
+		sgnl_event_save_fields( $new, array_merge( $e, array( 'start' => '', 'end' => '', 'ergebnis' => '', 'protokoll' => '', 'ausschreibung' => '', 'meldeuebersicht' => '', 'meldeergebnis' => '', 'livetiming' => '' ) ) );
 		wp_safe_redirect( admin_url( 'post.php?action=edit&post=' . $new ) );
 		exit;
 	}
@@ -1046,3 +1217,26 @@ add_action( 'restrict_manage_posts', function ( $type ) {
 add_filter( 'disable_months_dropdown', function ( $disable, $type ) {
 	return 'sgnl_event' === $type ? true : $disable;
 }, 10, 2 );
+
+/* =========================================================================
+ * Rechte: Admins + Redakteure dürfen Termine pflegen; zusätzlich gibt es
+ * die Rolle "Terminverwaltung" (nur Termine + Mediathek), z. B. für Trainer,
+ * die am Wettkampftag Meldeergebnis, Live-Timing und Nachrichten eintragen.
+ * ====================================================================== */
+add_action( 'init', function () {
+	if ( '2' === get_option( 'sgnl_event_caps' ) ) {
+		return;
+	}
+	$caps = array( 'edit_sgnl_events', 'edit_others_sgnl_events', 'edit_published_sgnl_events', 'edit_private_sgnl_events', 'publish_sgnl_events', 'read_private_sgnl_events', 'delete_sgnl_events', 'delete_others_sgnl_events', 'delete_published_sgnl_events', 'delete_private_sgnl_events' );
+	foreach ( array( 'administrator', 'editor' ) as $r ) {
+		$role = get_role( $r );
+		if ( $role ) {
+			foreach ( $caps as $c ) {
+				$role->add_cap( $c );
+			}
+		}
+	}
+	remove_role( 'sgnl_terminverwaltung' );
+	add_role( 'sgnl_terminverwaltung', __( 'Terminverwaltung', 'sgnl-core' ), array_merge( array( 'read' => true, 'upload_files' => true ), array_fill_keys( $caps, true ) ) );
+	update_option( 'sgnl_event_caps', '2' );
+}, 5 );

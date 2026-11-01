@@ -1,0 +1,73 @@
+/* SG Neptun – Live-Wettkämpfe */
+.sgnl-live {
+	--lv-navy: var(--navy, #0B2A5B);
+	--lv-primary: var(--primary, #1F44B8);
+	--lv-sky: var(--sky, #8FC9EC);
+	--lv-water: var(--water, #EEF5FA);
+	--lv-line: var(--line, #DCE6F0);
+	--lv-muted: var(--muted, #5B6B83);
+	--lv-red: var(--lane-red, #D7263D);
+}
+.sgnl-live .sgnl-ico { width: 15px; height: 15px; flex: none; }
+.live-list { display: grid; gap: 14px; }
+.live-list[hidden], .live-empty[hidden] { display: none; }
+.live-empty {
+	padding: 2.4rem 1.5rem; text-align: center; border-radius: var(--radius, 18px);
+	background: var(--lv-water); color: var(--lv-navy);
+}
+.live-empty strong { display: block; font-size: 1.1rem; }
+.live-empty p { margin: .4rem auto 0; color: var(--lv-muted); max-width: 46ch; }
+
+.live-card {
+	position: relative; padding: 1.25rem 1.4rem 1.3rem; background: #fff;
+	border: 1px solid var(--lv-line); border-radius: var(--radius, 18px);
+	box-shadow: var(--shadow, 0 1px 2px rgba(7, 29, 64, .06), 0 8px 24px rgba(7, 29, 64, .06));
+	display: grid; gap: .7rem; overflow: hidden;
+}
+.live-card--now { border-color: var(--lv-red); box-shadow: 0 0 0 3px rgba(215, 38, 61, .12), var(--shadow-lift, 0 18px 40px rgba(7, 29, 64, .12)); }
+.live-card--now::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--lane, var(--lv-red)); }
+.live-badge {
+	justify-self: start; display: inline-flex; align-items: center; gap: .45em;
+	font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+	padding: .3em .8em; border-radius: 999px;
+}
+.live-badge--now { background: var(--lv-red); color: #fff; }
+.live-badge--now::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: #fff; animation: sgnl-live-pulse 1.4s ease-in-out infinite; }
+.live-badge--soon { background: var(--lv-water); color: var(--lv-primary); }
+.live-badge--done { background: #f0f2f5; color: var(--lv-muted); }
+@keyframes sgnl-live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
+.live-card h3 { margin: 0 !important; font-size: clamp(1.1rem, 2vw, 1.3rem) !important; color: var(--lv-navy); line-height: 1.3; }
+.live-meta { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; color: var(--lv-muted); font-size: .92rem; }
+.live-meta span { display: inline-flex; align-items: center; gap: .4rem; }
+.live-meta .sgnl-ico { color: var(--lv-primary); }
+.live-links { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .2rem; }
+.live-link {
+	display: inline-flex; align-items: center; gap: .45rem; padding: .55em 1.05em; border-radius: 999px;
+	background: var(--lv-primary); border: 1.5px solid var(--lv-primary); color: #fff !important;
+	font-weight: 600; font-size: .9rem; text-decoration: none !important; line-height: 1.2;
+	transition: background .2s, color .2s, border-color .2s;
+}
+.live-link:hover { background: var(--lv-navy); border-color: var(--lv-navy); }
+.live-link--ghost { background: #fff; color: var(--lv-primary) !important; border-color: var(--lv-line); }
+.live-link--ghost:hover { background: var(--lv-water); border-color: var(--lv-primary); }
+.live-link .sgnl-ico { width: 14px; height: 14px; }
+.live-card--now .live-link:not(.live-link--ghost) { background: var(--lv-red); border-color: var(--lv-red); }
+
+/* Nachrichten */
+.live-notes { display: grid; gap: 10px; }
+.live-note { padding: 14px 18px; border-radius: 12px; background: #FFF8E1; border: 1px solid #F0D48A; color: #3d2c00; }
+.live-note__label { display: inline-flex; align-items: center; gap: .4rem; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #8a6100; margin-bottom: .35rem; }
+.live-note__label .sgnl-ico { width: 14px; height: 14px; }
+.live-note__text { font-size: 1.08rem; line-height: 1.5; font-weight: 500; }
+.live-note__text > * { margin: 0; }
+.live-note__text > * + * { margin-top: .45em; }
+.live-note__text h4, .live-note__text h5 { font-size: clamp(1.15rem, 2.4vw, 1.45rem); margin: 0; color: inherit; }
+.live-note__text h6 { font-size: 1.05rem; margin: 0; color: inherit; }
+.live-note__text ul, .live-note__text ol { padding-left: 1.3em; }
+.live-note__text a { color: var(--lv-primary); text-decoration: underline; }
+.live-note__text code { font-size: .85em; background: rgba(224, 161, 0, .16); padding: .05em .35em; border-radius: 4px; }
+.live-note__text blockquote { border-left: 3px solid #F0D48A; padding-left: .7em; }
+.live-note__meta { margin-top: 8px; font-size: .86rem; color: #7a5a1a; }
+.live-note + .live-note .live-note__text { font-size: .97rem; }
+
+@media (prefers-reduced-motion: reduce) { .live-badge--now::before { animation: none; } }

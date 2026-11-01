@@ -24,3 +24,14 @@
 .sgnl-ev-state.is-past { background: #f0f0f1; color: #50575e; }
 .sgnl-ev-missing { color: #d63638; font-weight: 600; }
 .sgnl-ev__open[hidden] { display: none !important; }
+
+/* Nachrichten */
+.sgnl-msgs__preview { margin: 8px 0 0; padding: 10px 14px; border-radius: 8px; background: #fff8e1; border: 1px solid #f0d48a; }
+.sgnl-msgs__preview > span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #7a5a1a; margin-bottom: 4px; }
+.sgnl-msgs__status { color: #50575e; margin-left: 6px; }
+.sgnl-msg { padding: 10px 14px; border-radius: 8px; background: #fff8e1; border: 1px solid #f0d48a; margin: 0 0 8px; }
+.sgnl-msg__text > :first-child { margin-top: 0; }
+.sgnl-msg__text > :last-child { margin-bottom: 0; }
+.sgnl-msg__meta { margin-top: 6px; font-size: 12px; color: #7a5a1a; }
+.sgnl-msg__del { color: #b32d2e !important; margin-left: 8px; }
+.sgnl-msgs__empty { color: #646970; }
