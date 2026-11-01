@@ -3,7 +3,7 @@
  * Plugin Name:       SG Neptun Funktionen
  * Plugin URI:        https://sgnl.de/
  * Description:       Vereinsfunktionen der SG Neptun: Termine (Terminplan, Archiv, PDF), Datenbank mit Live-Wettkämpfen, Galerie-Übersicht, Tabellen-Verwaltung, Cookie-Banner, Hinweise (Popups), Weiterleitungen, iFrame-Block, Kommentare aus, Umstellung von alten Plugins. Ersetzt TablePress, CookieYes, Popup Maker, Redirect Redirection, Advanced iFrame und Disable Comments.
- * Version:           1.5.0
+ * Version:           1.5.1
  * Requires at least: 6.6
  * Tested up to:      7.1
  * Requires PHP:      7.4
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SGNL_CORE_VERSION', '1.5.0' );
+define( 'SGNL_CORE_VERSION', '1.5.1' );
 define( 'SGNL_CORE_FILE', __FILE__ );
 define( 'SGNL_CORE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SGNL_CORE_URL', plugin_dir_url( __FILE__ ) );

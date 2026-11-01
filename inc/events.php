@@ -205,6 +205,26 @@ add_action( 'init', function () {
 }, 11 );
 
 /**
+ * Gehört der Termin ins Archiv? Nur Wettkämpfe (und Termine ohne Kategorie).
+ *
+ * @param array $e Termin.
+ * @return bool
+ */
+function sgnl_event_in_archive( array $e ) {
+	return empty( $e['cat_slugs'] ) || in_array( 'wettkampf', $e['cat_slugs'], true );
+}
+
+/**
+ * Kategorien, die nicht ins Archiv gehören (alles außer Wettkämpfe).
+ *
+ * @return string[]
+ */
+function sgnl_event_non_archive_cats() {
+	$terms = get_terms( array( 'taxonomy' => 'sgnl_event_cat', 'hide_empty' => false, 'fields' => 'slugs' ) );
+	return array_values( array_diff( is_array( $terms ) ? $terms : array(), array( 'wettkampf' ) ) );
+}
+
+/**
  * Kategorie anhand der Angaben erraten (für übernommene Termine).
  *
  * @param array $e Termin.
@@ -326,6 +346,10 @@ function sgnl_event_get( $post ) {
  */
 function sgnl_events_query( $mode = 'upcoming', $year = 0, array $cats = array(), array $exclude = array() ) {
 	$today = sgnl_events_today();
+	// Im Archiv stehen nur Wettkämpfe – alles andere wird nach dem Termin einfach ausgeblendet.
+	if ( 'archive' === $mode && ! $cats && ! $exclude ) {
+		$exclude = sgnl_event_non_archive_cats();
+	}
 	$args  = array(
 		'post_type'              => 'sgnl_event',
 		'post_status'            => 'publish',
@@ -597,8 +621,7 @@ function sgnl_events_render( $a ) {
 	$cats    = array_filter( array_map( 'sanitize_title', explode( ',', (string) $a['cats'] ) ) );
 	$year    = $archive ? ( (int) $a['year'] ? (int) $a['year'] : (int) wp_date( 'Y' ) ) : 0;
 	$view    = 'tiles' === $a['view'] ? 'tiles' : 'list';
-	// Im Archiv stehen Ferien nicht (außer ausdrücklich ausgewählt).
-	$events  = sgnl_events_query( $archive ? 'archive' : 'upcoming', $year, $cats, $archive && ! $cats ? array( 'ferien' ) : array() );
+	$events  = sgnl_events_query( $archive ? 'archive' : 'upcoming', $year, $cats );
 
 	wp_enqueue_style( 'sgnl-events' );
 	// Filter nach Kategorie (nur wenn mehr als eine vorkommt).
@@ -1017,12 +1040,15 @@ function sgnl_event_details_box( $post ) {
 	sgnl_events_datalist( 'sgnl-ev-list-team', sgnl_events_suggestions( 'team' ) );
 
 	if ( $e['start'] ) {
+		$arch   = sgnl_event_in_archive( $e );
 		$status = $e['past']
-			/* translators: %d: Jahr */
-			? sprintf( __( 'Vorbei – erscheint im Archiv %d. Ergebnisse und Protokoll können unten ergänzt werden.', 'sgnl-core' ), $e['year'] )
-			: ( in_array( 'ferien', $e['cat_slugs'], true )
-				? __( 'Steht im Terminplan. Nach dem letzten Tag verschwindet er automatisch.', 'sgnl-core' )
-				: __( 'Steht im Terminplan. Nach dem letzten Tag wandert der Termin automatisch ins Archiv.', 'sgnl-core' ) );
+			? ( $arch
+				/* translators: %d: Jahr */
+				? sprintf( __( 'Vorbei – erscheint im Archiv %d. Ergebnisse und Protokoll können unten ergänzt werden.', 'sgnl-core' ), $e['year'] )
+				: __( 'Vorbei – wird auf der Website nicht mehr angezeigt (nur Wettkämpfe kommen ins Archiv).', 'sgnl-core' ) )
+			: ( $arch
+				? __( 'Steht im Terminplan. Nach dem letzten Tag wandert der Termin automatisch ins Archiv.', 'sgnl-core' )
+				: __( 'Steht im Terminplan. Nach dem letzten Tag wird er automatisch ausgeblendet.', 'sgnl-core' ) );
 		echo '<p class="sgnl-ev__status ' . ( $e['past'] ? 'is-past' : 'is-upcoming' ) . '">' . esc_html( $status ) . '</p>';
 	}
 	?>
@@ -1293,6 +1319,8 @@ add_action( 'manage_sgnl_event_posts_custom_column', function ( $col, $id ) {
 		case 'sgnl_state':
 			if ( ! $e['start'] ) {
 				echo '–';
+			} elseif ( $e['past'] && ! sgnl_event_in_archive( $e ) ) {
+				echo '<span class="sgnl-ev-state is-past">' . esc_html__( 'ausgeblendet', 'sgnl-core' ) . '</span>';
 			} elseif ( $e['past'] ) {
 				/* translators: %d: Jahr */
 				echo '<span class="sgnl-ev-state is-past">' . esc_html( sprintf( __( 'Archiv %d', 'sgnl-core' ), $e['year'] ) ) . '</span>';

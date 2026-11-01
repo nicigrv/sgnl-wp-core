@@ -82,7 +82,9 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
   Nachrichten und Ergebnisse/Protokoll aus.
 - Auf der Website: farbige Etiketten und Filter („Alle / Wettkämpfe / Ferien …“). Im Block „Termine“
   lassen sich Kategorien auswählen, z. B. eine Jugend-Seite nur mit Jugendveranstaltungen.
-- Ferien stehen nicht im Archiv und werden im Live-Bereich nicht als „Live jetzt“ angezeigt.
+- **Im Archiv stehen nur Wettkämpfe.** Ferien, Veranstaltungen und Jugendtermine werden nach dem
+  letzten Tag einfach ausgeblendet (im Dashboard bleiben sie erhalten, Spalte „Erscheint in“: ausgeblendet).
+- Ferien werden im Live-Bereich nicht als „Live jetzt“ angezeigt.
 - Am selben Tag (auch am selben Ort) kann es beliebig viele Termine geben.
 
 ## Datenbank + Live – ab Version 1.4.0
