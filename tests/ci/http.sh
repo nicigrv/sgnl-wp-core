@@ -19,7 +19,8 @@ while read -r u; do
 done < "$DIR/urls.txt"
 
 echo "== Inhalte"
-curl -s "$BASE/" | grep -q 'fill:var(--wp--preset--color--water)' && ok "Welle hat die Farbe des ersten Abschnitts" || fail "Welle nicht eingefärbt"
+curl -s "$BASE/" > /tmp/front.html
+if grep -q 'fill:var(--wp--preset--color--water)' /tmp/front.html; then ok "Welle hat die Farbe des ersten Abschnitts"; else fail "Welle nicht eingefärbt"; grep -o '<svg class="hero-wave"[^>]*>' /tmp/front.html; grep -o '<body[^>]*>' /tmp/front.html; fi
 curl -s "$BASE/terminplan/" | grep -q 'sgnl-events__filter' && ok "Terminplan mit Kategorie-Filter" || fail "Terminplan ohne Filter"
 Y=$(sed -n 's#^/galerie/\([0-9]\{4\}\)/$#\1#p' "$DIR/urls.txt" | head -1)
 curl -s "$BASE/galerie/$Y/" | grep -q 'sgnl-albums' && ok "/galerie/$Y/ zeigt die Alben" || fail "/galerie/$Y/ zeigt keine Alben"
