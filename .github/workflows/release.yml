@@ -1,15 +1,19 @@
-# Baut bei jedem Versions-Tag (z. B. v1.2.3) die ZIP-Datei und legt ein GitHub-Release an.
+# Baut bei jedem Versions-Tag (z. B. v1.2.3) bzw. veröffentlichten Release die ZIP-Datei
+# und hängt sie an das GitHub-Release an.
 # WordPress findet das Release und zeigt das Update im Dashboard an.
 name: Release
 
 on:
   push:
     tags: ['v*']
+  release:
+    types: [published]
 
 permissions:
   contents: write
 
 env:
+  TAG: ${{ github.event.release.tag_name || github.ref_name }}
   SLUG: sgnl-core
   MAIN_FILE: sgnl-core.php
 
@@ -20,14 +24,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.release.tag_name || github.ref }}
 
       - name: Version im Code muss zum Tag passen
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_VERSION="${TAG#v}"
           FILE_VERSION=$(grep -m1 -E '^[ *]*Version:' "$MAIN_FILE" | sed -E 's/.*Version:[[:space:]]*//' | tr -d '\r[:space:]')
           echo "Tag: $TAG_VERSION – Datei: $FILE_VERSION"
           if [ "$TAG_VERSION" != "$FILE_VERSION" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME passt nicht zu 'Version: $FILE_VERSION' in $MAIN_FILE"
+            echo "::error::Tag $TAG passt nicht zu 'Version: $FILE_VERSION' in $MAIN_FILE"
             exit 1
           fi
 
@@ -38,16 +43,21 @@ jobs:
 
       - name: Änderungen für die Release-Beschreibung
         run: |
-          NOTES=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/^-----BEGIN PGP/,$d')
+          NOTES=$(git tag -l --format='%(contents)' "$TAG" | sed '/^-----BEGIN PGP/,$d')
           if [ -z "$(echo "$NOTES" | tr -d '[:space:]')" ]; then
-            PREV=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
-            if [ -n "$PREV" ]; then RANGE="$PREV..$GITHUB_REF_NAME"; else RANGE="$GITHUB_REF_NAME"; fi
+            PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
+            if [ -n "$PREV" ]; then RANGE="$PREV..$TAG"; else RANGE="$TAG"; fi
             NOTES=$(git log --no-merges --pretty='- %s' $RANGE)
           fi
           printf '%s\n' "$NOTES" > notes.md
           cat notes.md
 
-      - name: Release anlegen
+      - name: Release anlegen bzw. ZIP anhängen
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "$SLUG.zip" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$SLUG.zip" --clobber
+          else
+            gh release create "$TAG" "$SLUG.zip" --title "$TAG" --notes-file notes.md --verify-tag
+          fi
