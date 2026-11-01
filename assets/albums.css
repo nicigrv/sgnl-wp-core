@@ -1,0 +1,143 @@
+/* SG Neptun – Galerie-Übersicht (Kacheln) */
+.sgnl-albums {
+	--gap: clamp(1rem, 2.2vw, 1.6rem);
+	--al-radius: var(--radius, 18px);
+	display: grid;
+	gap: var(--gap);
+	grid-template-columns: repeat(auto-fill, minmax(max(16rem, calc((100% - 2 * var(--gap)) / 3)), 1fr));
+	margin-block: 0 2rem;
+}
+@media (max-width: 600px) { .sgnl-albums { grid-template-columns: 1fr; } }
+
+.sgnl-album {
+	position: relative;
+	display: block;
+	aspect-ratio: 4 / 3;
+	border-radius: var(--al-radius);
+	color: #fff !important;
+	text-decoration: none !important;
+	isolation: isolate;
+	box-shadow: var(--shadow, 0 1px 2px rgba(7, 29, 64, .06), 0 8px 24px rgba(7, 29, 64, .06));
+	transition: transform .35s cubic-bezier(.2, .7, .2, 1), box-shadow .35s;
+}
+.sgnl-album:hover, .sgnl-album:focus-visible {
+	transform: translateY(-4px);
+	box-shadow: var(--shadow-lift, 0 18px 40px rgba(7, 29, 64, .16));
+}
+.sgnl-album:focus-visible { outline: 3px solid var(--primary, #1F44B8); outline-offset: 3px; }
+
+/* Stapel-Optik für Sammlungen (z. B. ein Jahr mit mehreren Alben) */
+.sgnl-albums:has(.is-collection) { padding-top: 14px; }
+.sgnl-album.is-collection::before,
+.sgnl-album.is-collection::after {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 40%;
+	border-radius: inherit;
+	background: var(--sky, #8FC9EC);
+	transform: translateY(-14px) scaleX(.86);
+	transition: transform .35s cubic-bezier(.2, .7, .2, 1);
+}
+.sgnl-album.is-collection::after {
+	background: var(--primary, #1F44B8);
+	transform: translateY(-7px) scaleX(.93);
+}
+.sgnl-album.is-collection:hover::before { transform: translateY(-18px) scaleX(.86); }
+.sgnl-album.is-collection:hover::after { transform: translateY(-9px) scaleX(.93); }
+
+.sgnl-album__media {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	border-radius: inherit;
+	background: var(--navy, #0B2A5B);
+}
+.sgnl-album__media::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, rgba(7, 29, 64, 0) 38%, rgba(7, 29, 64, .55) 68%, rgba(7, 29, 64, .9) 100%);
+}
+.sgnl-album__img {
+	width: 100%;
+	height: 100% !important;
+	object-fit: cover;
+	display: block;
+	transition: transform .6s cubic-bezier(.2, .7, .2, 1);
+}
+.sgnl-album:hover .sgnl-album__img { transform: scale(1.06); }
+.sgnl-album__placeholder {
+	position: absolute;
+	inset: 0;
+	background:
+		repeating-linear-gradient(90deg, rgba(255, 255, 255, .08) 0 2px, transparent 2px 16.66%),
+		linear-gradient(135deg, var(--primary, #1F44B8), var(--navy, #0B2A5B));
+}
+
+.sgnl-album__body {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: 1.1rem 3.6rem 1.1rem 1.25rem;
+	display: flex;
+	flex-direction: column;
+	gap: .25rem;
+}
+.sgnl-album__title {
+	font-weight: 700;
+	font-size: clamp(1.12rem, 1.7vw, 1.4rem);
+	line-height: 1.2;
+	letter-spacing: -.005em;
+	text-shadow: 0 1px 12px rgba(0, 0, 0, .25);
+	overflow-wrap: break-word;
+	hyphens: auto;
+}
+.sgnl-album__meta {
+	font-size: .85rem;
+	color: rgba(255, 255, 255, .85);
+}
+.sgnl-album__meta::before {
+	content: "";
+	display: inline-block;
+	width: 1.6rem;
+	height: 3px;
+	margin: 0 .55rem .22em 0;
+	border-radius: 2px;
+	background: var(--lane-red, #D7263D);
+	vertical-align: middle;
+}
+.sgnl-album__go {
+	position: absolute;
+	right: 1.05rem;
+	bottom: 1.1rem;
+	width: 2.4rem;
+	height: 2.4rem;
+	display: grid;
+	place-items: center;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, .16);
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+	transition: background .3s, color .3s, transform .3s;
+}
+.sgnl-album:hover .sgnl-album__go { background: #fff; color: var(--navy, #0B2A5B); transform: translateX(3px); }
+
+.sgnl-albums__empty {
+	padding: 1.2rem 1.5rem;
+	border-radius: var(--radius, 18px);
+	background: var(--water, #EEF5FA);
+	color: var(--navy, #0B2A5B);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sgnl-album, .sgnl-album__img, .sgnl-album::before, .sgnl-album::after, .sgnl-album__go { transition: none; }
+	.sgnl-album:hover, .sgnl-album:hover .sgnl-album__img { transform: none; }
+}
+
+/* Jahreszahlen groß */
+.sgnl-album.is-collection .sgnl-album__title { font-family: var(--font-wide, inherit); font-size: clamp(1.5rem, 2.6vw, 2.1rem); letter-spacing: .02em; }

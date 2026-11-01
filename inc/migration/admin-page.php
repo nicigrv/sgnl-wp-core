@@ -78,6 +78,22 @@ function sgnl_migration_page() {
 			deactivate_plugins( $list );
 			$messages[] = array( 'success', sprintf( __( '%d Plugins deaktiviert. Bitte die Seite jetzt durchklicken – danach können sie unter Plugins gelöscht werden.', 'sgnl-core' ), count( $list ) ) );
 		}
+		if ( 'events_run' === $action ) {
+			$r          = SGNL_Events_Import::run();
+			$messages[] = array( 'success', sprintf( __( 'Termine übernommen: %1$d neu angelegt, %2$d vorhandene ergänzt, %3$d Seiten umgestellt.', 'sgnl-core' ), $r['created'], $r['merged'], $r['pages'] ) );
+		}
+		if ( 'events_undo' === $action ) {
+			$n          = SGNL_Events_Import::undo();
+			$messages[] = array( 'success', sprintf( __( 'Termin-Übernahme rückgängig gemacht (%d Seiten wiederhergestellt, übernommene Termine im Papierkorb).', 'sgnl-core' ), $n ) );
+		}
+		if ( 'gallery_run' === $action ) {
+			$r          = SGNL_Gallery_Setup::run();
+			$messages[] = array( 'success', sprintf( __( 'Galerien eingerichtet: %1$d Jahre, %2$d Alben.', 'sgnl-core' ), $r['years'], $r['albums'] ) );
+		}
+		if ( 'gallery_undo' === $action ) {
+			SGNL_Gallery_Setup::undo();
+			$messages[] = array( 'success', __( 'Galerie-Einrichtung rückgängig gemacht.', 'sgnl-core' ) );
+		}
 		if ( 'cleanup' === $action ) {
 			if ( empty( $_POST['sgnl_cleanup_ok'] ) ) {
 				$messages[] = array( 'error', __( 'Bitte bestätige das Aufräumen.', 'sgnl-core' ) );
@@ -209,8 +225,11 @@ function sgnl_migration_page() {
 			</form>
 		</div>
 
+		<?php sgnl_events_import_card(); ?>
+		<?php sgnl_gallery_setup_card(); ?>
+
 		<div class="card">
-			<h2><span class="step">4</span><?php esc_html_e( 'Aufräumen (optional)', 'sgnl-core' ); ?></h2>
+			<h2><span class="step">7</span><?php esc_html_e( 'Aufräumen (optional)', 'sgnl-core' ); ?></h2>
 			<p><?php esc_html_e( 'Löscht Daten alter und bereits entfernter Plugins aus der Datenbank. Erst ausführen, wenn die umgestellte Seite geprüft ist. Kann nicht rückgängig gemacht werden – nur über das Backup.', 'sgnl-core' ); ?></p>
 			<?php
 			$counts  = SGNL_Migration::leftover_post_counts();
@@ -247,6 +266,132 @@ function sgnl_migration_page() {
 				<?php endif; ?>
 			</form>
 		</div>
+	</div>
+	<?php
+}
+
+
+/* Hinweis: Termine/Galerien können eingerichtet werden */
+add_action( 'admin_notices', function () {
+	if ( ! current_user_can( 'manage_options' ) || ! get_option( 'sgnl_migration_done' ) ) {
+		return;
+	}
+	$screen = get_current_screen();
+	if ( ! $screen || ! in_array( $screen->id, array( 'dashboard', 'edit-sgnl_event', 'edit-page', 'plugins' ), true ) ) {
+		return;
+	}
+	$todo = array();
+	if ( SGNL_Events_Import::pending() ) {
+		$todo[] = __( 'Terminplan und Archiv-Tabellen in die neue Termin-Verwaltung übernehmen', 'sgnl-core' );
+	}
+	if ( ! SGNL_Gallery_Setup::done() && SGNL_Gallery_Setup::pending() ) {
+		$todo[] = __( 'Galerien als Kacheln einrichten (/galerie/)', 'sgnl-core' );
+	}
+	if ( ! $todo ) {
+		return;
+	}
+	printf(
+		'<div class="notice notice-info"><p><strong>%s</strong> %s – <a href="%s">%s</a></p></div>',
+		esc_html__( 'SG Neptun Funktionen:', 'sgnl-core' ),
+		esc_html( implode( ' · ', $todo ) ),
+		esc_url( admin_url( 'tools.php?page=sgnl-migration#sgnl-neu' ) ),
+		esc_html__( 'Jetzt ansehen', 'sgnl-core' )
+	);
+} );
+
+/**
+ * Karte "Termine übernehmen".
+ */
+function sgnl_events_import_card() {
+	$plan    = SGNL_Events_Import::plan();
+	$pending = SGNL_Events_Import::pending();
+	$today   = sgnl_events_today();
+	?>
+	<div class="card" id="sgnl-neu">
+		<h2><span class="step">5</span><?php esc_html_e( 'Termine übernehmen', 'sgnl-core' ); ?></h2>
+		<?php if ( ! $pending ) : ?>
+			<p class="ok"><?php esc_html_e( 'Erledigt – Termine werden unter „Termine“ gepflegt.', 'sgnl-core' ); ?></p>
+		<?php else : ?>
+			<p><?php esc_html_e( 'Die Tabellen „Terminplan“ und „Archiv JJJJ“ werden in einzelne Termine umgewandelt. Auf den Seiten erscheint danach der Block „Termine“ (Liste/Kacheln), der Terminplan als PDF entsteht automatisch. Die alten Tabellen bleiben als Entwurf erhalten.', 'sgnl-core' ); ?></p>
+			<p><strong><?php esc_html_e( 'Gefundene Tabellen:', 'sgnl-core' ); ?></strong>
+				<?php
+				echo esc_html( implode( ', ', array_map( function ( $s ) {
+					return $s['title'] . ( 'archive' === $s['kind'] ? ' (Archiv ' . $s['year'] . ')' : ' (Terminplan)' );
+				}, $plan['sources'] ) ) );
+				?>
+			</p>
+			<p><strong><?php esc_html_e( 'Seiten, die umgestellt werden:', 'sgnl-core' ); ?></strong>
+				<?php echo esc_html( implode( ', ', array_map( 'get_the_title', $plan['pages'] ) ) ); ?></p>
+			<details>
+				<summary><?php printf( esc_html__( 'Vorschau: %d Termine', 'sgnl-core' ), count( $plan['events'] ) ); ?></summary>
+				<table class="widefat striped" style="margin-top:.6rem">
+					<thead><tr><th><?php esc_html_e( 'Datum', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Veranstaltung', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Ort', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Bahn / Mannschaft', 'sgnl-core' ); ?></th><th>A / E / P</th><th><?php esc_html_e( 'Erscheint in', 'sgnl-core' ); ?></th></tr></thead>
+					<tbody>
+					<?php foreach ( $plan['events'] as $e ) : ?>
+						<tr>
+							<td><?php echo esc_html( sgnl_event_date_label( $e, true ) ); ?></td>
+							<td><?php echo esc_html( $e['title'] ); ?><?php echo $e['existing'] ? ' <em>(' . esc_html__( 'schon vorhanden – wird ergänzt', 'sgnl-core' ) . ')</em>' : ''; ?></td>
+							<td><?php echo esc_html( $e['ort'] ); ?></td>
+							<td><?php echo esc_html( trim( $e['bahn'] . ' · ' . $e['team'], ' ·' ) ); ?></td>
+							<td><?php echo esc_html( ( $e['ausschreibung'] ? 'A' : '–' ) . ' ' . ( $e['ergebnis'] ? 'E' : '–' ) . ' ' . ( $e['protokoll'] ? 'P' : '–' ) ); ?></td>
+							<td><?php echo esc_html( ( $e['end'] ? $e['end'] : $e['start'] ) < $today ? 'Archiv ' . substr( $e['start'], 0, 4 ) : 'Terminplan' ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+					</tbody>
+				</table>
+			</details>
+			<form method="post" style="margin-top:1rem">
+				<?php wp_nonce_field( 'sgnl_migration' ); ?>
+				<button class="button button-primary" name="sgnl_action" value="events_run"><?php esc_html_e( 'Termine übernehmen', 'sgnl-core' ); ?></button>
+			</form>
+		<?php endif; ?>
+		<?php if ( SGNL_Events_Import::has_backup() ) : ?>
+			<form method="post" style="margin-top:.8rem" onsubmit="return confirm('<?php echo esc_js( __( 'Übernahme rückgängig machen? Übernommene Termine kommen in den Papierkorb, die Seiten zeigen wieder die Tabellen.', 'sgnl-core' ) ); ?>');">
+				<?php wp_nonce_field( 'sgnl_migration' ); ?>
+				<button class="button" name="sgnl_action" value="events_undo"><?php esc_html_e( 'Termin-Übernahme rückgängig machen', 'sgnl-core' ); ?></button>
+			</form>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
+/**
+ * Karte "Galerien einrichten".
+ */
+function sgnl_gallery_setup_card() {
+	$done = SGNL_Gallery_Setup::done();
+	$plan = SGNL_Gallery_Setup::plan();
+	?>
+	<div class="card">
+		<h2><span class="step">6</span><?php esc_html_e( 'Galerien als Kacheln', 'sgnl-core' ); ?></h2>
+		<p><?php esc_html_e( 'Aufbau: /galerie/ (Auswahl der Jahre) → /galerie/2026/ (Alben als Kacheln) → /galerie/2026/dlp/ (Fotos, per Klick vergrößerbar). Die Kacheln entstehen automatisch aus den Unterseiten; Titelbild = Beitragsbild der Seite.', 'sgnl-core' ); ?></p>
+		<?php if ( $plan['years'] ) : ?>
+			<p><?php esc_html_e( 'Die bisherigen Seiten werden je Überschrift + Galerie in eigene Alben aufgeteilt. Alte Adressen leiten weiter, Menüpunkte zeigen auf die neuen Jahresseiten.', 'sgnl-core' ); ?></p>
+			<table class="widefat striped"><tbody>
+				<tr><td><strong>/galerie/</strong></td><td><?php echo $plan['root'] ? esc_html__( 'vorhandene Seite wird zur Auswahlseite (bisheriger Inhalt wird gesichert und als Album übernommen)', 'sgnl-core' ) : esc_html__( 'wird angelegt', 'sgnl-core' ); ?></td></tr>
+				<?php foreach ( $plan['years'] as $year => $albums ) : ?>
+					<tr><td><strong>/galerie/<?php echo (int) $year; ?>/</strong></td><td><ul class="sgnl-log">
+						<?php foreach ( $albums as $a ) : ?>
+							<li><?php echo esc_html( $a['title'] . ' → /galerie/' . $year . '/' . $a['slug'] . '/ (' . count( $a['images'] ) . ' Fotos)' ); ?></li>
+						<?php endforeach; ?>
+					</ul></td></tr>
+				<?php endforeach; ?>
+			</tbody></table>
+			<form method="post" style="margin-top:1rem">
+				<?php wp_nonce_field( 'sgnl_migration' ); ?>
+				<button class="button button-primary" name="sgnl_action" value="gallery_run"><?php esc_html_e( 'Galerien einrichten', 'sgnl-core' ); ?></button>
+			</form>
+		<?php elseif ( $done ) : ?>
+			<p class="ok"><?php esc_html_e( 'Eingerichtet. Neues Album: Seite anlegen, als übergeordnete Seite das Jahr wählen (z. B. „Galerie 2026“), Galerie-Block einfügen, Beitragsbild setzen.', 'sgnl-core' ); ?></p>
+		<?php else : ?>
+			<p><?php esc_html_e( 'Keine alten Galerie-Seiten gefunden. Neue Struktur: Seite „Galerie“ mit dem Block „Galerie-Übersicht“, darunter Jahresseiten (ebenfalls mit dem Block) und darunter die Alben.', 'sgnl-core' ); ?></p>
+		<?php endif; ?>
+		<?php if ( $done ) : ?>
+			<form method="post" style="margin-top:.8rem" onsubmit="return confirm('<?php echo esc_js( __( 'Galerie-Einrichtung rückgängig machen?', 'sgnl-core' ) ); ?>');">
+				<?php wp_nonce_field( 'sgnl_migration' ); ?>
+				<button class="button" name="sgnl_action" value="gallery_undo"><?php esc_html_e( 'Galerie-Einrichtung rückgängig machen', 'sgnl-core' ); ?></button>
+			</form>
+		<?php endif; ?>
 	</div>
 	<?php
 }

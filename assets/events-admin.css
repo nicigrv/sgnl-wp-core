@@ -1,0 +1,26 @@
+/* SG Neptun – Termine im Dashboard */
+.sgnl-ev { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; padding: 6px 0 4px; }
+.sgnl-ev__field { display: flex; flex-direction: column; gap: 5px; }
+.sgnl-ev__field.is-wide, .sgnl-ev__file { grid-column: 1 / -1; }
+.sgnl-ev__field > label { font-weight: 600; }
+.sgnl-ev__field .req { color: #d63638; }
+.sgnl-ev__field input[type="date"] { max-width: 220px; min-height: 34px; }
+.sgnl-ev__filerow { display: flex; gap: 6px; align-items: center; }
+.sgnl-ev__filerow input { flex: 1; min-width: 0; }
+.sgnl-ev__filerow .button { flex: none; }
+.sgnl-ev__status { margin: 4px 0 10px; padding: 8px 12px; border-radius: 6px; font-weight: 500; }
+.sgnl-ev__status.is-upcoming { background: #edf7ee; color: #1e5f2b; }
+.sgnl-ev__status.is-past { background: #eef5fa; color: #0B2A5B; }
+@media (max-width: 782px) { .sgnl-ev { grid-template-columns: 1fr; } }
+
+/* Liste */
+.post-type-sgnl_event .column-sgnl_date { width: 150px; }
+.post-type-sgnl_event .column-sgnl_docs { width: 110px; }
+.post-type-sgnl_event .column-sgnl_state { width: 120px; }
+.sgnl-ev-doc { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 3px; border-radius: 6px; background: #f0f0f1; color: #a7aaad; font-size: 11px; font-weight: 700; text-decoration: none; }
+.sgnl-ev-doc.is-set { background: #1F44B8; color: #fff; }
+.sgnl-ev-state { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+.sgnl-ev-state.is-upcoming { background: #edf7ee; color: #1e5f2b; }
+.sgnl-ev-state.is-past { background: #f0f0f1; color: #50575e; }
+.sgnl-ev-missing { color: #d63638; font-weight: 600; }
+.sgnl-ev__open[hidden] { display: none !important; }

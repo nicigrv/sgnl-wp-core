@@ -16,8 +16,8 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
 ## Reihenfolge (ca. 15 Minuten)
 
 1. **Backup** von Dateien und Datenbank (z. B. über ManageWP).
-2. **Plugin** hochladen: Plugins → Installieren → Plugin hochladen → `sgnl-core.zip` (aus dem neuesten Release) → Aktivieren.
-3. **Theme** hochladen: Design → Themes → Theme hinzufügen → Theme hochladen → `sgnl-neptun.zip` (aus dem neuesten Theme-Release)
+2. **Plugin** hochladen: Plugins → Installieren → Plugin hochladen → `sgnl-core-1.1.0.zip` → Aktivieren.
+3. **Theme** hochladen: Design → Themes → Theme hinzufügen → Theme hochladen → `sgnl-neptun-2.0.0.zip`
    → „Aktuelle Version durch hochgeladene ersetzen“. Danach eine beliebige Seite einmal aufrufen
    (das Theme trennt sich dabei selbst von Mesmerize).
    *Ab hier bis Schritt 4 sieht die Startseite unformatiert aus – also direkt weitermachen.*
@@ -58,7 +58,33 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
 - **Datenschutzerklärung prüfen:** CookieYes und ggf. WPMU-DEV/Matomo herausnehmen,
   eigenen Cookie-Banner (nur notwendiges Cookie `sgnl_consent`) und Chatwoot beschreiben.
 
-## Tabellen (z. B. Terminplan)
+## Termine (Terminplan + Archiv) – ab Version 1.3.0
+- **Einmalig nach dem Update:** Werkzeuge → SG Neptun Umstellung → Schritt 5 „Termine übernehmen“.
+  Die Tabellen „Terminplan“ und „Archiv 2024–2026“ werden zu einzelnen Terminen, die Seiten
+  bekommen den Block „Termine“. Die alten Tabellen bleiben als Entwurf erhalten, rückgängig machbar.
+- Dashboard → **Termine** → „Neuer Termin“: Name, Datum von/bis, Ort, Bahn, Mannschaft,
+  Ausschreibung (PDF aus der Mediathek oder Link).
+- Nach dem letzten Tag verschwindet der Termin automatisch aus dem Terminplan und steht im
+  **Archiv seines Jahres**. Dort beim Termin **Ergebnisse** und **Protokoll** ergänzen.
+- Gibt es im Archiv ein neues Jahr (z. B. 2027), wird die Seite „Archiv 2027“ automatisch
+  angelegt und im Menü unter „Archiv“ eingefügt.
+- Der Button **„Terminplan herunterladen“** erzeugt das PDF (A4) jedes Mal frisch aus den Terminen.
+- Besucher können zwischen **Liste** und **Kacheln** wechseln; die Standardansicht ist im Block einstellbar.
+- In der Terminliste: Filter „Terminplan“ / „Archiv JJJJ“, A/E/P zeigt Ausschreibung/Ergebnisse/Protokoll,
+  „Duplizieren“ für wiederkehrende Veranstaltungen.
+
+## Galerien – ab Version 1.3.0
+- **Einmalig:** Werkzeuge → SG Neptun Umstellung → Schritt 6 „Galerien einrichten“.
+  Aus „Galerie 2024/2025/2026“ wird: /galerie/ (Jahre) → /galerie/2026/ (Alben) → /galerie/2026/dlp/ (Fotos).
+  Alte Adressen leiten weiter, Menüpunkte zeigen auf die neuen Seiten. Rückgängig machbar.
+- **Neues Album:** Seiten → Neu, Titel z. B. „Vereinsmeisterschaften“, rechts „Übergeordnete Seite“ =
+  „Galerie 2026“, Galerie-Block einfügen, **Beitragsbild** = Titelbild der Kachel. Fertig – die Kachel
+  erscheint automatisch.
+- **Neues Jahr:** Seite „Galerie 2027“ mit Übergeordneter Seite „Galerie“, als Adresse (Permalink) „2027“ eintragen,
+  Block **„Galerie-Übersicht“** einfügen.
+- Alle Galerien sind automatisch per Klick vergrößerbar (mit Blättern) – auch alte Galerien in Beiträgen.
+
+## Tabellen
 - Dashboard → **Tabellen** → Tabelle anklicken. Zellen direkt bearbeiten, mit Tab zur nächsten Zelle.
 - Zeilennummer bzw. Spaltenbuchstabe anklicken: einfügen, verschieben, duplizieren, ausblenden, löschen.
 - Aus Excel mehrere Zellen kopieren und in eine Zelle einfügen – wird automatisch verteilt.
@@ -68,10 +94,6 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
   (Excel: „CSV (Trennzeichen-getrennt)“).
 - Auf einer Seite einbinden: Block **„Tabelle“** einfügen und Tabelle auswählen (oder `[sgnl_tabelle id="…"]`).
 - Eingeloggt sieht man auf der Website unter jeder Tabelle den Link „Tabelle bearbeiten“.
-
-## Updates
-Theme und Plugin aktualisieren sich danach über **Dashboard → Aktualisierungen** direkt aus GitHub
-(nicigrv/sgnl-wp-theme und nicigrv/sgnl-wp-core). Kein ZIP-Hochladen mehr nötig.
 
 ## Bearbeiten im Alltag
 - **Design → Anpassen → SG Neptun**: Startseiten-Überschrift, Buttons, Slideshow-Bilder,
@@ -83,5 +105,4 @@ Theme und Plugin aktualisieren sich danach über **Dashboard → Aktualisierunge
 - Block-Stile (rechts unter „Stile“): Überschrift „Mit Bahnleine“, Gruppe „Karte“/„Info-Box“,
   Bild „Porträt (rund)“/„Foto mit Schatten“, Button „Mit Mail-/Download-/Link-Symbol“,
   Absatz „Kennzahl (zählt hoch)“, Tabelle „Vereinstabelle“.
-- Galerien: normaler Galerie-Block, Link auf „Vergrößern beim Klicken“ – mit Blättern.
-- Tabellen (Terminplan): normaler Tabellen-Block, direkt in der Seite bearbeiten.
+- Galerien: normaler Galerie-Block – Bilder vergrößern sich automatisch beim Klicken.
