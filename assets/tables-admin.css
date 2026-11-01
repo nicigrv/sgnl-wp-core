@@ -1,0 +1,32 @@
+/* SG Neptun – Tabellen-Editor */
+.sgnl-te__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 0 10px; position: sticky; top: 32px; background: #fff; z-index: 5; }
+.sgnl-te__sep { width: 1px; height: 24px; background: #dcdcde; margin: 0 4px; }
+.sgnl-te__size { margin-left: auto; color: #646970; font-size: 12px; }
+.sgnl-te__scroll { overflow: auto; max-height: 72vh; border: 1px solid #dcdcde; border-radius: 6px; }
+.sgnl-te__grid { border-collapse: separate; border-spacing: 0; min-width: 100%; }
+.sgnl-te__grid th, .sgnl-te__grid td { border-right: 1px solid #e2e4e7; border-bottom: 1px solid #e2e4e7; padding: 0; vertical-align: top; background: #fff; }
+.sgnl-te__grid thead th { position: sticky; top: 0; z-index: 3; background: #f6f7f7; }
+.sgnl-te__grid .rowhead { position: sticky; left: 0; z-index: 2; background: #f6f7f7; width: 44px; }
+.sgnl-te__grid .corner { position: sticky; left: 0; top: 0; z-index: 4; background: #f0f0f1; width: 44px; }
+.sgnl-te__grid .hbtn { width: 100%; min-width: 44px; height: 30px; border: 0; background: none; cursor: pointer; color: #50575e; font-weight: 600; font-size: 12px; }
+.sgnl-te__grid .hbtn:hover, .sgnl-te__grid .hbtn:focus { background: #e6eefb; color: #1F44B8; outline: none; }
+.sgnl-te__grid textarea {
+	display: block; width: 100%; min-width: 150px; min-height: 34px; border: 0; border-radius: 0; resize: vertical;
+	padding: 7px 8px; font-size: 13px; line-height: 1.4; background: transparent; box-shadow: none; overflow: hidden;
+}
+.sgnl-te__grid textarea:focus { box-shadow: inset 0 0 0 2px #1F44B8; background: #fff; position: relative; z-index: 1; }
+.sgnl-te__grid tr.is-head td { background: #0B2A5B; }
+.sgnl-te__grid tr.is-head textarea { color: #fff; font-weight: 600; }
+.sgnl-te__grid tr.is-head textarea:focus { background: #0B2A5B; }
+.sgnl-te__grid tr.is-foot td { background: #EEF5FA; }
+.sgnl-te__grid tr.is-hidden td, .sgnl-te__grid td.is-hidden { background: repeating-linear-gradient(-45deg, #f6f7f7 0 6px, #fff 6px 12px) !important; }
+.sgnl-te__grid tr.is-hidden textarea, .sgnl-te__grid td.is-hidden textarea { color: #8c8f94 !important; }
+.sgnl-te__grid tr.is-hidden .rowhead .hbtn, .sgnl-te__grid th.colhead.is-hidden .hbtn { text-decoration: line-through; color: #8c8f94; }
+.sgnl-te__help { color: #646970; font-size: 12px; margin: 10px 0 0; max-width: 900px; }
+.sgnl-te__menu { position: absolute; z-index: 100000; background: #fff; border: 1px solid #c3c4c7; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.15); padding: 4px; min-width: 220px; }
+.sgnl-te__menu[hidden] { display: none; }
+.sgnl-te__menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.sgnl-te__menu button:hover, .sgnl-te__menu button:focus { background: #f0f6fc; color: #1F44B8; outline: none; }
+.sgnl-te__menu button.is-danger { color: #b32d2e; }
+#sgnl_table_editor .inside { margin: 0; padding: 0 12px 12px; }
+@media (max-width: 782px) { .sgnl-te__toolbar { top: 46px; } }
