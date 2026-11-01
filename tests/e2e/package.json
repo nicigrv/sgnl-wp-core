@@ -1,0 +1,8 @@
+{
+  "name": "sgnl-e2e",
+  "private": true,
+  "description": "Browser-Tests (Playwright) für SG Neptun – laufen auf GitHub Actions",
+  "dependencies": {
+    "playwright": "1.55.0"
+  }
+}
