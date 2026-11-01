@@ -58,3 +58,17 @@ jQuery(function ($) {
 	});
 	render();
 });
+
+/* Felder nur für Wettkämpfe (Bahn, Meldungen/Live-Timing, Ergebnisse/Protokoll) bei anderen Kategorien ausblenden */
+jQuery(function ($) {
+	var wk = (window.sgnlEventsAdmin || {}).wettkampf;
+	var $boxes = $('#sgnl_event_catchecklist input[type=checkbox]');
+	if (!wk || !$boxes.length) { return; }
+	function update() {
+		var checked = $boxes.filter(':checked').map(function () { return +this.value; }).get();
+		var show = !checked.length || checked.indexOf(+wk) > -1;
+		$('.sgnl-ev--wk, #sgnl_event_live, #sgnl_event_msgs, #sgnl_event_after').toggle(show);
+	}
+	$boxes.on('change', update);
+	update();
+});

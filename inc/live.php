@@ -2,8 +2,8 @@
 /**
  * Live-Wettkämpfe (früher datenbank.sgnl.de → Reiter "Live").
  *
- * Quelle sind die Termine: Ein Termin erscheint im Live-Bereich, solange er
- * läuft – und vorher bzw. bis 48 Stunden danach, wenn mindestens ein Link
+ * Quelle sind die Termine: Ein Wettkampf erscheint im Live-Bereich, solange er
+ * läuft – und jeder Termin vorher bzw. bis 48 Stunden danach, wenn mindestens ein Link
  * (Meldeübersicht, Meldeergebnis, Live-Timing, Protokoll) oder eine Nachricht
  * eingetragen ist.
  *
@@ -49,7 +49,8 @@ function sgnl_live_events() {
 		}
 		// Laufende Termine immer; kommende und beendete nur mit Links oder Nachrichten.
 		$has_info = $e['meldeuebersicht'] || $e['meldeergebnis'] || $e['livetiming'] || $e['protokoll'] || $e['messages'];
-		$running  = $e['ts_start'] <= $now && $e['ts_end'] >= $now;
+		// "Live jetzt" ohne Links nur für Wettkämpfe (nicht z. B. Ferien).
+		$running  = $e['ts_start'] <= $now && $e['ts_end'] >= $now && ( ! $e['cat_slugs'] || in_array( 'wettkampf', $e['cat_slugs'], true ) );
 		if ( ! $running && ! $has_info ) {
 			continue;
 		}
@@ -75,6 +76,7 @@ function sgnl_live_json( array $e ) {
 		'start'           => $e['ts_start'],
 		'ende'            => $e['ts_end'],
 		'zeit'            => (bool) $e['start_time'],
+		'wettkampf'       => ! $e['cat_slugs'] || in_array( 'wettkampf', $e['cat_slugs'], true ),
 		'meldeuebersicht' => $e['meldeuebersicht'] ? $e['meldeuebersicht'] : null,
 		'meldeergebnis'   => $e['meldeergebnis'] ? $e['meldeergebnis'] : null,
 		'livetiming'      => $e['livetiming'] ? $e['livetiming'] : null,

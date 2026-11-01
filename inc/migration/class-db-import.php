@@ -170,9 +170,6 @@ class SGNL_DB_Import {
 	 * @return int[] wk_id => Termin-ID (0 = neu anlegen)
 	 */
 	public static function assign( array $rows ) {
-		$norm   = function ( $s ) {
-			return preg_replace( '/[^a-z0-9äöüß]/u', '', mb_strtolower( preg_replace( '/\b(19|20)\d\d\b/', '', (string) $s ) ) );
-		};
 		$result = array();
 		$pairs  = array();
 		foreach ( $rows as $row ) {
@@ -184,11 +181,8 @@ class SGNL_DB_Import {
 			}
 			$cands = get_posts( array( 'post_type' => 'sgnl_event', 'post_status' => array( 'publish', 'draft', 'future', 'private' ), 'meta_key' => '_sgnl_start', 'meta_value' => $row['start'], 'numberposts' => 20 ) ); // phpcs:ignore WordPress.DB.SlowDBQuery
 			foreach ( $cands as $p ) {
-				$e = sgnl_event_get( $p );
-				similar_text( $norm( $e['title'] ), $norm( $row['title'] ), $pct );
-				if ( $e['ort'] && $row['ort'] && $norm( $e['ort'] ) === $norm( $row['ort'] ) ) {
-					$pct += 40;
-				}
+				$e   = sgnl_event_get( $p );
+				$pct = sgnl_event_match_score( $e['title'], $e['ort'], $row['title'], $row['ort'] );
 				if ( $pct >= 50 ) {
 					$pairs[] = array( $pct, $row['wk_id'], $p->ID );
 				}
@@ -209,16 +203,26 @@ class SGNL_DB_Import {
 	}
 
 	/**
+	 * Alle Termine an diesem Tag (zur Auswahl in der Vorschau).
+	 *
+	 * @param string $ymd Datum.
+	 * @return WP_Post[]
+	 */
+	public static function candidates( $ymd ) {
+		return get_posts( array( 'post_type' => 'sgnl_event', 'post_status' => array( 'publish', 'draft', 'future', 'private' ), 'meta_key' => '_sgnl_start', 'meta_value' => $ymd, 'numberposts' => 30, 'orderby' => 'title', 'order' => 'ASC' ) ); // phpcs:ignore WordPress.DB.SlowDBQuery
+	}
+
+	/**
 	 * Übernehmen.
 	 *
 	 * @param array[] $rows Wettkämpfe.
 	 * @return array created, merged, messages
 	 */
-	public static function run( array $rows ) {
+	public static function run( array $rows, array $manual = array() ) {
 		$created = 0;
 		$merged  = 0;
 		$msgs    = 0;
-		$map     = self::assign( $rows );
+		$map     = array_replace( self::assign( $rows ), $manual );
 		foreach ( $rows as $row ) {
 			$id = $map[ $row['wk_id'] ];
 			if ( $id ) {
@@ -239,6 +243,9 @@ class SGNL_DB_Import {
 				$created++;
 			}
 			update_post_meta( $id, '_sgnl_wk_id', (string) $row['wk_id'] );
+			if ( ! wp_get_object_terms( $id, 'sgnl_event_cat', array( 'fields' => 'ids' ) ) ) {
+				wp_set_object_terms( $id, 'wettkampf', 'sgnl_event_cat' );
+			}
 			if ( $row['nachrichten'] ) {
 				$have = get_post_meta( $id, '_sgnl_messages', true );
 				$have = is_array( $have ) ? $have : array();

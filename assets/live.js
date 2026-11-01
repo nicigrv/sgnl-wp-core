@@ -61,7 +61,7 @@
 		var now = Date.now();
 		var events = (data && data.events || []).filter(function (e) {
 			var has = e.meldeuebersicht || e.meldeergebnis || e.livetiming || e.protokoll || (e.nachrichten && e.nachrichten.length);
-			var running = e.start * 1000 <= now && e.ende * 1000 >= now;
+			var running = e.start * 1000 <= now && e.ende * 1000 >= now && e.wettkampf !== false;
 			return e.ende * 1000 >= now - AFTER_MS && (running || has);
 		}).sort(function (a, b) { return a.start - b.start; });
 		var list = box.querySelector('.live-list'), empty = box.querySelector('.live-empty');

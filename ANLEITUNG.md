@@ -73,10 +73,23 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
 - In der Terminliste: Filter „Terminplan“ / „Archiv JJJJ“, A/E/P zeigt Ausschreibung/Ergebnisse/Protokoll,
   „Duplizieren“ für wiederkehrende Veranstaltungen.
 
+## Kategorien – ab Version 1.5.0
+- Termine haben Kategorien: **Wettkämpfe, Veranstaltungen, Ferien, Jugendveranstaltungen**.
+  Weitere unter Termine → Kategorien anlegen (mit Farbe).
+- Beim Update werden vorhandene Termine automatisch einsortiert (bitte kurz prüfen).
+- Nur Datum und Name sind Pflicht – Ausschreibung, Ort, Bahn usw. können leer bleiben.
+  Ist eine andere Kategorie als „Wettkämpfe“ angehakt, blendet das Formular Bahn, Meldungen/Live-Timing,
+  Nachrichten und Ergebnisse/Protokoll aus.
+- Auf der Website: farbige Etiketten und Filter („Alle / Wettkämpfe / Ferien …“). Im Block „Termine“
+  lassen sich Kategorien auswählen, z. B. eine Jugend-Seite nur mit Jugendveranstaltungen.
+- Ferien stehen nicht im Archiv und werden im Live-Bereich nicht als „Live jetzt“ angezeigt.
+- Am selben Tag (auch am selben Ort) kann es beliebig viele Termine geben.
+
 ## Datenbank + Live – ab Version 1.4.0
 - **Einmalig:** Werkzeuge → SG Neptun Umstellung → Schritt 7.
   a) phpMyAdmin der alten Datenbank (datenbank.sgnl.de) → Exportieren → SQL, Datei hochladen →
-     Vorschau → „Wettkämpfe übernehmen“. Passende Termine werden ergänzt (Uhrzeiten, Meldeübersicht,
+     Vorschau → Zuordnung prüfen (pro Wettkampf wählbar: „Neu anlegen“ oder „Ergänzen: …“) →
+     „Wettkämpfe übernehmen“. Passende Termine werden ergänzt (Uhrzeiten, Meldeübersicht,
      Meldeergebnis, Live-Timing, Protokoll, Nachrichten), fehlende angelegt.
   b) „Datenbank einrichten“: Seite /datenbank/ mit den Reitern Live, Termine, Ergebnisse, Bestenliste,
      Rekorde. Optional Trainerbereich /datenbank/trainer/ (Schwimmer, Meldungen) mit Passwort.

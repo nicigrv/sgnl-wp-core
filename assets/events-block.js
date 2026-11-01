@@ -34,11 +34,29 @@
 							label: 'Button „Terminplan herunterladen“ (PDF)', checked: !!a.pdf, __nextHasNoMarginBottom: true,
 							onChange: function (v) { set({ pdf: v }); }
 						})) : null,
+						h('div', { style: { marginTop: 16 } },
+							h('p', { style: { fontWeight: 600, margin: '0 0 6px' } }, 'Kategorien'),
+							h('p', { style: { fontSize: 12, color: '#757575', margin: '0 0 8px' } }, 'Keine ausgewählt = alle anzeigen.'),
+							(cfg.cats || []).map(function (c) {
+								var sel = (a.cats || '').split(',').filter(Boolean);
+								return h('div', { key: c.slug, style: { marginBottom: 6 } }, h(comp.CheckboxControl, {
+									label: c.name, checked: sel.indexOf(c.slug) > -1, __nextHasNoMarginBottom: true,
+									onChange: function (v) {
+										var next = (cfg.cats || []).map(function (x) { return x.slug; }).filter(function (x) { return x === c.slug ? v : sel.indexOf(x) > -1; });
+										set({ cats: next.join(',') });
+									}
+								}));
+							})
+						),
+						h('div', { style: { marginTop: 12 } }, h(comp.ToggleControl, {
+							label: 'Filter nach Kategorie anzeigen', checked: a.filter !== false, __nextHasNoMarginBottom: true,
+							onChange: function (v) { set({ filter: v }); }
+						})),
 						h('p', { style: { marginTop: 16 } }, h('a', { href: cfg.listUrl, target: '_blank', rel: 'noopener' }, 'Termine verwalten ↗')),
 						h('p', null, h('a', { href: cfg.newUrl, target: '_blank', rel: 'noopener' }, 'Neuen Termin anlegen ↗'))
 					)
 				),
-				h(SSR, { block: 'sgnl/events', attributes: { mode: a.mode, year: a.year, view: a.view, switcher: a.switcher, pdf: a.pdf } }),
+				h(SSR, { block: 'sgnl/events', attributes: { mode: a.mode, year: a.year, view: a.view, switcher: a.switcher, pdf: a.pdf, cats: a.cats, filter: a.filter } }),
 				h('p', { style: { fontSize: 12, color: '#5B6B83', marginTop: 6 } },
 					archive ? 'Vergangene Termine erscheinen hier automatisch. ' : 'Vergangene Termine wandern automatisch ins Archiv. ',
 					h('a', { href: cfg.listUrl, target: '_blank', rel: 'noopener' }, 'Termine verwalten ↗'))

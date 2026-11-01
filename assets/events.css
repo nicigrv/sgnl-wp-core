@@ -113,3 +113,34 @@
 /* Mehrere Unterlagen in der Liste */
 .sgnl-docs { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; }
 @media (max-width: 760px) { .sgnl-docs { flex-direction: row; flex-wrap: wrap; gap: .4rem 1rem; } }
+
+/* Kategorien */
+.sgnl-cats { display: flex; flex-wrap: wrap; gap: .3rem; margin: .3rem 0 0; }
+.sgnl-event__body > .sgnl-cats { margin: 0 0 .45rem; }
+.sgnl-cat {
+	--cat: var(--ev-muted);
+	display: inline-flex; align-items: center; gap: .35em; padding: .12em .6em; border-radius: 999px;
+	font-size: .72rem; font-weight: 600; letter-spacing: .02em; line-height: 1.5;
+	color: var(--cat); background: color-mix(in srgb, var(--cat) 12%, #fff);
+}
+.sgnl-cat::before { content: ""; width: .45em; height: .45em; border-radius: 50%; background: var(--cat); }
+.sgnl-event.has-cat::before { background: var(--cat); opacity: .85; }
+.sgnl-event.has-cat .sgnl-event__date { background: var(--cat); }
+.is-archive .sgnl-event.has-cat .sgnl-event__date { background: color-mix(in srgb, var(--cat) 12%, #fff); color: var(--ev-navy); }
+.sgnl-event[hidden], .sgnl-events__list tr[hidden] { display: none !important; }
+
+.sgnl-events__filter { display: flex; flex-wrap: wrap; gap: .45rem; margin: -.4rem 0 1.3rem; }
+.sgnl-events__filter button {
+	--cat: var(--ev-navy);
+	display: inline-flex; align-items: center; gap: .45em; font: inherit; font-size: .88rem; font-weight: 500;
+	padding: .45em .95em; border-radius: 999px; cursor: pointer;
+	border: 1.5px solid var(--ev-line); background: #fff; color: var(--ev-navy);
+	transition: background .2s, border-color .2s, color .2s;
+}
+.sgnl-events__filter button i { width: .6em; height: .6em; border-radius: 50%; background: var(--cat); }
+.sgnl-events__filter button:hover { border-color: var(--cat); }
+.sgnl-events__filter button[aria-pressed="true"] { background: var(--cat); border-color: var(--cat); color: #fff; }
+.sgnl-events__filter button[aria-pressed="true"] i { background: #fff; }
+.sgnl-events__filter button:focus-visible { outline: 2px solid var(--ev-primary); outline-offset: 2px; }
+.sgnl-event.has-cat .sgnl-event__wd { color: rgba(255, 255, 255, .85); }
+.is-archive .sgnl-event.has-cat .sgnl-event__wd { color: var(--ev-muted); }

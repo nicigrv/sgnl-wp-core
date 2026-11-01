@@ -225,17 +225,22 @@ class SGNL_Events_Import {
 	 * @return bool
 	 */
 	protected static function same( array $a, array $b ) {
+		return self::score( $a, $b ) >= 50;
+	}
+
+	/**
+	 * Wie sicher ist es dieselbe Veranstaltung? Nur gleicher Tag zählt, und der
+	 * Name muss passen – am selben Tag und Ort kann es mehrere Veranstaltungen geben.
+	 *
+	 * @param array $a Termin.
+	 * @param array $b Termin.
+	 * @return float 0–100
+	 */
+	protected static function score( array $a, array $b ) {
 		if ( $a['start'] !== $b['start'] ) {
-			return false;
+			return 0;
 		}
-		$n = function ( $s ) {
-			return preg_replace( '/[^a-z0-9äöüß]/u', '', mb_strtolower( $s ) );
-		};
-		if ( $a['ort'] && $b['ort'] && $n( $a['ort'] ) === $n( $b['ort'] ) ) {
-			return true;
-		}
-		similar_text( $n( $a['title'] ), $n( $b['title'] ), $pct );
-		return $pct >= 55;
+		return sgnl_event_match_score( $a['title'], $a['ort'] ?? '', $b['title'], $b['ort'] ?? '' );
 	}
 
 	/**
@@ -256,29 +261,43 @@ class SGNL_Events_Import {
 		}
 
 		$events = array();
+		$used   = array();
 		foreach ( $sources as $src ) {
 			foreach ( self::parse( $src ) as $e ) {
-				$merged = false;
-				foreach ( $events as &$x ) {
-					// Zeilen derselben Tabelle sind immer verschiedene Termine.
-					if ( $x['source'] !== $e['source'] && self::same( $x, $e ) ) {
-						foreach ( $e as $k => $v ) {
-							if ( '' === ( $x[ $k ] ?? '' ) && '' !== $v ) {
-								$x[ $k ] = $v;
-							}
-						}
-						$merged = true;
-						break;
+				// Besten Partner aus einer anderen Tabelle suchen (jeder Termin nur einmal pro Tabelle).
+				$best  = -1;
+				$score = 0;
+				foreach ( $events as $i => $x ) {
+					if ( $x['source'] === $e['source'] || ! empty( $x['merged'][ $e['source'] ] ) ) {
+						continue;
+					}
+					$sc = self::score( $x, $e );
+					if ( $sc >= 50 && $sc > $score ) {
+						$score = $sc;
+						$best  = $i;
 					}
 				}
-				unset( $x );
+				$merged = $best >= 0;
+				if ( $merged ) {
+					foreach ( $e as $k => $v ) {
+						if ( is_string( $v ) && '' === (string) ( $events[ $best ][ $k ] ?? '' ) && '' !== $v ) {
+							$events[ $best ][ $k ] = $v;
+						}
+					}
+					$events[ $best ]['merged'][ $e['source'] ] = true;
+				}
 				if ( ! $merged ) {
 					$e['existing'] = 0;
+					$sc_best       = 0;
 					foreach ( $existing as $ex ) {
-						if ( self::same( $ex, $e ) ) {
+						$sc = isset( $used[ $ex['id'] ] ) ? 0 : self::score( $ex, $e );
+						if ( $sc >= 50 && $sc > $sc_best ) {
+							$sc_best       = $sc;
 							$e['existing'] = $ex['id'];
-							break;
 						}
+					}
+					if ( $e['existing'] ) {
+						$used[ $e['existing'] ] = true;
 					}
 					$events[] = $e;
 				}
@@ -349,6 +368,7 @@ class SGNL_Events_Import {
 			}
 			sgnl_event_save_fields( $id, $e );
 			update_post_meta( $id, '_sgnl_imported', (int) $e['source'] );
+			wp_set_object_terms( $id, sgnl_event_guess_cat( sgnl_event_get( $id ) ), 'sgnl_event_cat' );
 			$created++;
 		}
 

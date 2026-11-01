@@ -307,6 +307,8 @@ class SGNL_Events_PDF {
 					$val = sgnl_event_date_label( $e );
 				} elseif ( 'ausschreibung' === $key ) {
 					$val = $e['ausschreibung'] ? 'Ausschreibung' : '';
+				} elseif ( 'title' === $key && ! empty( $e['cats'] ) && ! in_array( 'wettkampf', $e['cat_slugs'], true ) ) {
+					$val = $e['title'] . ' (' . $e['cats'][0]['name'] . ')';
 				} else {
 					$val = $e[ $key ];
 				}

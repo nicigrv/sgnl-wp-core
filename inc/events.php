@@ -112,6 +112,8 @@ add_action( 'init', function () {
 			'view'     => array( 'type' => 'string', 'default' => 'list' ),
 			'switcher' => array( 'type' => 'boolean', 'default' => true ),
 			'pdf'      => array( 'type' => 'boolean', 'default' => true ),
+			'cats'     => array( 'type' => 'string', 'default' => '' ),
+			'filter'   => array( 'type' => 'boolean', 'default' => true ),
 			'align'    => array( 'type' => 'string' ),
 		),
 		'render_callback' => 'sgnl_events_render',
@@ -123,6 +125,7 @@ add_action( 'init', function () {
 			'ansicht'   => 'liste',
 			'umschalter' => 'ja',
 			'pdf'       => 'ja',
+			'kategorie' => '',
 		), $atts, 'sgnl_termine' );
 		return sgnl_events_render( array(
 			'mode'     => $atts['archiv'] ? 'archive' : 'upcoming',
@@ -130,9 +133,141 @@ add_action( 'init', function () {
 			'view'     => in_array( $atts['ansicht'], array( 'kacheln', 'tiles' ), true ) ? 'tiles' : 'list',
 			'switcher' => 'nein' !== $atts['umschalter'],
 			'pdf'      => 'nein' !== $atts['pdf'],
+			'cats'     => $atts['kategorie'],
 			'align'    => 'wide',
 		) );
 	} );
+} );
+
+/* =========================================================================
+ * Kategorien (Wettkämpfe, Veranstaltungen, Ferien, Jugendveranstaltungen …)
+ * ====================================================================== */
+
+/**
+ * Standard-Kategorien: slug => [Name, Farbe].
+ *
+ * @return array
+ */
+function sgnl_event_default_cats() {
+	return array(
+		'wettkampf'     => array( __( 'Wettkämpfe', 'sgnl-core' ), '#1F44B8' ),
+		'veranstaltung' => array( __( 'Veranstaltungen', 'sgnl-core' ), '#0B86B5' ),
+		'ferien'        => array( __( 'Ferien', 'sgnl-core' ), '#2E9E5B' ),
+		'jugend'        => array( __( 'Jugendveranstaltungen', 'sgnl-core' ), '#E0761F' ),
+	);
+}
+
+add_action( 'init', function () {
+	register_taxonomy( 'sgnl_event_cat', 'sgnl_event', array(
+		'labels'            => array(
+			'name'          => __( 'Kategorien', 'sgnl-core' ),
+			'singular_name' => __( 'Kategorie', 'sgnl-core' ),
+			'menu_name'     => __( 'Kategorien', 'sgnl-core' ),
+			'all_items'     => __( 'Alle Kategorien', 'sgnl-core' ),
+			'add_new_item'  => __( 'Neue Kategorie', 'sgnl-core' ),
+			'edit_item'     => __( 'Kategorie bearbeiten', 'sgnl-core' ),
+			'search_items'  => __( 'Kategorien durchsuchen', 'sgnl-core' ),
+			'not_found'     => __( 'Keine Kategorien.', 'sgnl-core' ),
+		),
+		'public'            => false,
+		'show_ui'           => true,
+		'show_in_rest'      => false,
+		'show_admin_column' => true,
+		'hierarchical'      => true,
+		'rewrite'           => false,
+		'query_var'         => 'sgnl_event_cat',
+		'capabilities'      => array(
+			'manage_terms' => 'edit_others_sgnl_events',
+			'edit_terms'   => 'edit_others_sgnl_events',
+			'delete_terms' => 'edit_others_sgnl_events',
+			'assign_terms' => 'edit_sgnl_events',
+		),
+	) );
+	register_term_meta( 'sgnl_event_cat', '_sgnl_color', array( 'type' => 'string', 'single' => true, 'show_in_rest' => false ) );
+
+	if ( '1' !== get_option( 'sgnl_event_cats' ) ) {
+		foreach ( sgnl_event_default_cats() as $slug => $conf ) {
+			if ( ! term_exists( $slug, 'sgnl_event_cat' ) ) {
+				$t = wp_insert_term( $conf[0], 'sgnl_event_cat', array( 'slug' => $slug ) );
+				if ( ! is_wp_error( $t ) ) {
+					update_term_meta( $t['term_id'], '_sgnl_color', $conf[1] );
+				}
+			}
+		}
+		// Vorhandene Termine ohne Kategorie einsortieren.
+		foreach ( get_posts( array( 'post_type' => 'sgnl_event', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids' ) ) as $id ) {
+			if ( ! wp_get_object_terms( $id, 'sgnl_event_cat', array( 'fields' => 'ids' ) ) ) {
+				wp_set_object_terms( $id, sgnl_event_guess_cat( sgnl_event_get( $id ) ), 'sgnl_event_cat' );
+			}
+		}
+		update_option( 'sgnl_event_cats', '1' );
+	}
+}, 11 );
+
+/**
+ * Kategorie anhand der Angaben erraten (für übernommene Termine).
+ *
+ * @param array $e Termin.
+ * @return string Slug
+ */
+function sgnl_event_guess_cat( array $e ) {
+	$t = mb_strtolower( $e['title'] . ' ' . $e['team'] );
+	if ( false !== strpos( $t, 'ferien' ) ) {
+		return 'ferien';
+	}
+	if ( preg_match( '/meisterschaft|schwimmfest|pokal|\bdms|sprint|meeting|wettkampf|schwimmtest|bestenkampf|kurzbahn|langbahn|freiwasser|\bbm\b|\bhm\b|\bdm\b/u', $t ) || $e['bahn'] || $e['protokoll'] || $e['ergebnis'] || $e['meldeergebnis'] || $e['livetiming'] ) {
+		return 'wettkampf';
+	}
+	if ( preg_match( '/jugend|kinder|halloween|zeltlager|swim ?in|bastel|kids/u', $t ) ) {
+		return 'jugend';
+	}
+	return 'veranstaltung';
+}
+
+/**
+ * Kategorien eines Termins.
+ *
+ * @param int $id Termin.
+ * @return array[] slug, name, color
+ */
+function sgnl_event_cats( $id ) {
+	$out      = array();
+	$defaults = sgnl_event_default_cats();
+	$terms    = get_the_terms( $id, 'sgnl_event_cat' );
+	foreach ( is_array( $terms ) ? $terms : array() as $t ) {
+		$c     = (string) get_term_meta( $t->term_id, '_sgnl_color', true );
+		$out[] = array(
+			'slug'  => $t->slug,
+			'name'  => $t->name,
+			'color' => preg_match( '/^#[0-9a-f]{6}$/i', $c ) ? $c : ( $defaults[ $t->slug ][1] ?? '#5B6B83' ),
+		);
+	}
+	return $out;
+}
+
+/* Farbe einer Kategorie im Dashboard einstellbar */
+add_action( 'sgnl_event_cat_add_form_fields', function () {
+	echo '<div class="form-field"><label for="sgnl-cat-color">' . esc_html__( 'Farbe', 'sgnl-core' ) . '</label><input type="color" name="sgnl_color" id="sgnl-cat-color" value="#1F44B8"></div>';
+} );
+add_action( 'sgnl_event_cat_edit_form_fields', function ( $term ) {
+	$c = (string) get_term_meta( $term->term_id, '_sgnl_color', true );
+	echo '<tr class="form-field"><th><label for="sgnl-cat-color">' . esc_html__( 'Farbe', 'sgnl-core' ) . '</label></th><td><input type="color" name="sgnl_color" id="sgnl-cat-color" value="' . esc_attr( $c ? $c : '#1F44B8' ) . '"></td></tr>';
+} );
+foreach ( array( 'created_sgnl_event_cat', 'edited_sgnl_event_cat' ) as $hook ) {
+	add_action( $hook, function ( $term_id ) {
+		if ( isset( $_POST['sgnl_color'] ) && preg_match( '/^#[0-9a-f]{6}$/i', (string) $_POST['sgnl_color'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			update_term_meta( $term_id, '_sgnl_color', sanitize_hex_color( wp_unslash( $_POST['sgnl_color'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
+		}
+	} );
+}
+
+/* Kategorien für den Block-Editor */
+add_action( 'enqueue_block_editor_assets', function () {
+	$cats = array();
+	foreach ( get_terms( array( 'taxonomy' => 'sgnl_event_cat', 'hide_empty' => false ) ) as $t ) {
+		$cats[] = array( 'slug' => $t->slug, 'name' => $t->name );
+	}
+	wp_add_inline_script( 'sgnl-events-block', 'window.sgnlEventsBlock = Object.assign(window.sgnlEventsBlock || {}, ' . wp_json_encode( array( 'cats' => $cats ) ) . ');', 'before' );
 } );
 
 /* Kein Block-Editor für Termine – einfaches Formular */
@@ -173,6 +308,8 @@ function sgnl_event_get( $post ) {
 	}
 	$e['last']     = $e['end'] ? $e['end'] : $e['start'];
 	$e['messages'] = sgnl_event_messages( $post->ID );
+	$e['cats']     = sgnl_event_cats( $post->ID );
+	$e['cat_slugs'] = wp_list_pluck( $e['cats'], 'slug' );
 	$e['ts_start'] = $e['start'] ? sgnl_event_ts( $e['start'], $e['start_time'] ? $e['start_time'] : '00:00' ) : 0;
 	$e['ts_end']   = $e['start'] ? sgnl_event_ts( $e['last'], $e['end_time'] ? $e['end_time'] : '23:59' ) : 0;
 	$e['past'] = $e['last'] && $e['last'] < sgnl_events_today();
@@ -187,7 +324,7 @@ function sgnl_event_get( $post ) {
  * @param int    $year Jahr (nur Archiv).
  * @return array[]
  */
-function sgnl_events_query( $mode = 'upcoming', $year = 0 ) {
+function sgnl_events_query( $mode = 'upcoming', $year = 0, array $cats = array(), array $exclude = array() ) {
 	$today = sgnl_events_today();
 	$args  = array(
 		'post_type'              => 'sgnl_event',
@@ -196,8 +333,17 @@ function sgnl_events_query( $mode = 'upcoming', $year = 0 ) {
 		'meta_key'               => '_sgnl_start', // phpcs:ignore WordPress.DB.SlowDBQuery
 		'orderby'                => array( 'meta_value' => 'archive' === $mode ? 'DESC' : 'ASC', 'title' => 'ASC' ),
 		'no_found_rows'          => true,
-		'update_post_term_cache' => false,
 	);
+	$tax = array();
+	if ( $cats ) {
+		$tax[] = array( 'taxonomy' => 'sgnl_event_cat', 'field' => 'slug', 'terms' => $cats );
+	}
+	if ( $exclude ) {
+		$tax[] = array( 'taxonomy' => 'sgnl_event_cat', 'field' => 'slug', 'terms' => $exclude, 'operator' => 'NOT IN' );
+	}
+	if ( $tax ) {
+		$args['tax_query'] = $tax; // phpcs:ignore WordPress.DB.SlowDBQuery
+	}
 	if ( 'archive' === $mode && $year ) {
 		$args['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery
 			array(
@@ -405,6 +551,23 @@ function sgnl_event_messages( $id ) {
 }
 
 /**
+ * Kategorie-Etiketten.
+ *
+ * @param array $e Termin.
+ * @return string
+ */
+function sgnl_event_cat_chips( array $e ) {
+	if ( empty( $e['cats'] ) ) {
+		return '';
+	}
+	$h = '<span class="sgnl-cats">';
+	foreach ( $e['cats'] as $c ) {
+		$h .= '<span class="sgnl-cat" style="--cat:' . esc_attr( $c['color'] ) . '">' . esc_html( $c['name'] ) . '</span>';
+	}
+	return $h . '</span>';
+}
+
+/**
  * Adresse des PDF-Terminplans.
  *
  * @return string
@@ -427,14 +590,26 @@ function sgnl_events_render( $a ) {
 		'switcher' => true,
 		'pdf'      => true,
 		'align'    => null,
+		'cats'     => '',
+		'filter'   => true,
 	) );
 	$archive = 'archive' === $a['mode'];
+	$cats    = array_filter( array_map( 'sanitize_title', explode( ',', (string) $a['cats'] ) ) );
 	$year    = $archive ? ( (int) $a['year'] ? (int) $a['year'] : (int) wp_date( 'Y' ) ) : 0;
 	$view    = 'tiles' === $a['view'] ? 'tiles' : 'list';
-	$events  = sgnl_events_query( $archive ? 'archive' : 'upcoming', $year );
+	// Im Archiv stehen Ferien nicht (außer ausdrücklich ausgewählt).
+	$events  = sgnl_events_query( $archive ? 'archive' : 'upcoming', $year, $cats, $archive && ! $cats ? array( 'ferien' ) : array() );
 
 	wp_enqueue_style( 'sgnl-events' );
-	if ( $a['switcher'] && $events ) {
+	// Filter nach Kategorie (nur wenn mehr als eine vorkommt).
+	$present = array();
+	foreach ( $events as $e ) {
+		foreach ( $e['cats'] as $c ) {
+			$present[ $c['slug'] ] = $c;
+		}
+	}
+	$show_filter = $a['filter'] && count( $present ) > 1;
+	if ( ( $a['switcher'] || $show_filter ) && $events ) {
 		wp_enqueue_script( 'sgnl-events' );
 	}
 
@@ -458,6 +633,19 @@ function sgnl_events_render( $a ) {
 	}
 	if ( $bar ) {
 		$html .= '<div class="sgnl-events__bar">' . $bar . '</div>';
+	}
+	if ( $show_filter ) {
+		$order = array_keys( sgnl_event_default_cats() );
+		uksort( $present, function ( $x, $y ) use ( $order ) {
+			$ix = array_search( $x, $order, true );
+			$iy = array_search( $y, $order, true );
+			return ( false === $ix ? 99 : $ix ) - ( false === $iy ? 99 : $iy );
+		} );
+		$html .= '<div class="sgnl-events__filter" role="group" aria-label="' . esc_attr__( 'Nach Kategorie filtern', 'sgnl-core' ) . '"><button type="button" data-cat="" aria-pressed="true">' . esc_html__( 'Alle', 'sgnl-core' ) . '</button>';
+		foreach ( $present as $c ) {
+			$html .= '<button type="button" data-cat="' . esc_attr( $c['slug'] ) . '" aria-pressed="false" style="--cat:' . esc_attr( $c['color'] ) . '"><i aria-hidden="true"></i>' . esc_html( $c['name'] ) . '</button>';
+		}
+		$html .= '</div>';
 	}
 
 	if ( ! $events ) {
@@ -503,16 +691,16 @@ function sgnl_events_render_list( array $events, $archive ) {
 		if ( $g !== $group ) {
 			$group = $g;
 			$label = sgnl_month_name( (int) substr( $g, 5, 2 ) ) . ( $archive ? '' : ' ' . substr( $g, 0, 4 ) );
-			$h    .= '<tr class="is-group-row"><td colspan="' . count( $cols ) . '">' . esc_html( $label ) . '</td></tr>';
+			$h    .= '<tr class="is-group-row" data-group="' . esc_attr( $g ) . '"><td colspan="' . count( $cols ) . '">' . esc_html( $label ) . '</td></tr>';
 		}
-		$h .= '<tr>';
+		$h .= '<tr data-cat="' . esc_attr( implode( ' ', $e['cat_slugs'] ) ) . '">';
 		foreach ( $cols as $k => $label ) {
 			switch ( $k ) {
 				case 'date':
 					$val = esc_html( sgnl_event_date_label( $e ) );
 					break;
 				case 'title':
-					$val = '<strong>' . esc_html( $e['title'] ) . '</strong>';
+					$val = '<strong>' . esc_html( $e['title'] ) . '</strong>' . sgnl_event_cat_chips( $e );
 					break;
 				case 'docs':
 					$val = sgnl_events_doc_links( $e );
@@ -575,9 +763,10 @@ function sgnl_events_render_tiles( array $events, $archive ) {
 			? sgnl_events_doc_link( $e['ergebnis'], __( 'Ergebnisse', 'sgnl-core' ), 'trophy', 'is-primary' ) . sgnl_events_doc_link( $e['protokoll'], __( 'Protokoll', 'sgnl-core' ) )
 			: sgnl_events_doc_links( $e, true );
 
-		$h .= '<article class="sgnl-event">'
+		$cat = $e['cats'] ? $e['cats'][0]['color'] : '';
+		$h  .= '<article class="sgnl-event' . ( $e['cats'] ? ' has-cat' : '' ) . '" data-cat="' . esc_attr( implode( ' ', $e['cat_slugs'] ) ) . '"' . ( $cat ? ' style="--cat:' . esc_attr( $cat ) . '"' : '' ) . '>'
 			. '<div class="sgnl-event__date' . $long . '"><span class="sgnl-event__wd">' . esc_html( $wd ) . '</span><span class="sgnl-event__days">' . esc_html( $days ) . '</span><span class="sgnl-event__month">' . esc_html( $month ) . '</span></div>'
-			. '<div class="sgnl-event__body"><h3 class="sgnl-event__title">' . esc_html( $e['title'] ) . '</h3>'
+			. '<div class="sgnl-event__body">' . sgnl_event_cat_chips( $e ) . '<h3 class="sgnl-event__title">' . esc_html( $e['title'] ) . '</h3>'
 			. ( $meta ? '<ul class="sgnl-event__meta">' . $meta . '</ul>' : '' )
 			. ( $links ? '<div class="sgnl-event__links">' . $links . '</div>' : '' )
 			. '</div></article>';
@@ -758,6 +947,8 @@ add_action( 'admin_enqueue_scripts', function ( $hook ) {
 		wp_enqueue_media();
 		wp_enqueue_script( 'sgnl-markdown', SGNL_CORE_URL . 'assets/markdown.js', array(), sgnl_core_ver( 'assets/markdown.js' ), true );
 		wp_enqueue_script( 'sgnl-events-admin', SGNL_CORE_URL . 'assets/events-admin.js', array( 'jquery', 'sgnl-markdown' ), sgnl_core_ver( 'assets/events-admin.js' ), true );
+		$wk = get_term_by( 'slug', 'wettkampf', 'sgnl_event_cat' );
+		wp_localize_script( 'sgnl-events-admin', 'sgnlEventsAdmin', array( 'wettkampf' => $wk ? (int) $wk->term_id : 0 ) );
 	}
 } );
 
@@ -829,7 +1020,9 @@ function sgnl_event_details_box( $post ) {
 		$status = $e['past']
 			/* translators: %d: Jahr */
 			? sprintf( __( 'Vorbei – erscheint im Archiv %d. Ergebnisse und Protokoll können unten ergänzt werden.', 'sgnl-core' ), $e['year'] )
-			: __( 'Steht im Terminplan. Nach dem letzten Tag wandert der Termin automatisch ins Archiv.', 'sgnl-core' );
+			: ( in_array( 'ferien', $e['cat_slugs'], true )
+				? __( 'Steht im Terminplan. Nach dem letzten Tag verschwindet er automatisch.', 'sgnl-core' )
+				: __( 'Steht im Terminplan. Nach dem letzten Tag wandert der Termin automatisch ins Archiv.', 'sgnl-core' ) );
 		echo '<p class="sgnl-ev__status ' . ( $e['past'] ? 'is-past' : 'is-upcoming' ) . '">' . esc_html( $status ) . '</p>';
 	}
 	?>
@@ -854,15 +1047,15 @@ function sgnl_event_details_box( $post ) {
 			<label for="sgnl-ev-ort"><?php esc_html_e( 'Ort', 'sgnl-core' ); ?></label>
 			<input type="text" class="widefat" id="sgnl-ev-ort" name="sgnl_event[ort]" value="<?php echo esc_attr( $e['ort'] ); ?>" list="sgnl-ev-list-ort" autocomplete="off">
 		</div>
-		<div class="sgnl-ev__field">
-			<label for="sgnl-ev-bahn"><?php esc_html_e( 'Bahn', 'sgnl-core' ); ?></label>
+		<div class="sgnl-ev__field sgnl-ev--wk">
+			<label for="sgnl-ev-bahn"><?php esc_html_e( 'Bahn', 'sgnl-core' ); ?> <small><?php esc_html_e( '(nur bei Wettkämpfen)', 'sgnl-core' ); ?></small></label>
 			<input type="text" class="widefat" id="sgnl-ev-bahn" name="sgnl_event[bahn]" value="<?php echo esc_attr( $e['bahn'] ); ?>" list="sgnl-ev-list-bahn" autocomplete="off" placeholder="25 m">
 		</div>
 		<div class="sgnl-ev__field is-wide">
 			<label for="sgnl-ev-team"><?php esc_html_e( 'Mannschaft', 'sgnl-core' ); ?></label>
 			<input type="text" class="widefat" id="sgnl-ev-team" name="sgnl_event[team]" value="<?php echo esc_attr( $e['team'] ); ?>" list="sgnl-ev-list-team" autocomplete="off" placeholder="<?php esc_attr_e( 'z. B. 1. Mannschaft, Masters', 'sgnl-core' ); ?>">
 		</div>
-		<?php sgnl_events_file_field( 'ausschreibung', $e['ausschreibung'], __( 'Ausschreibung', 'sgnl-core' ), __( 'PDF aus der Mediathek wählen bzw. hochladen – oder einen Link einfügen.', 'sgnl-core' ) ); ?>
+		<?php sgnl_events_file_field( 'ausschreibung', $e['ausschreibung'], __( 'Ausschreibung (optional)', 'sgnl-core' ), __( 'PDF aus der Mediathek wählen bzw. hochladen – oder einen Link einfügen. Kann leer bleiben, z. B. bei Ferien oder Jugendveranstaltungen.', 'sgnl-core' ) ); ?>
 	</div>
 	<?php
 }
@@ -1210,6 +1403,14 @@ add_action( 'restrict_manage_posts', function ( $type ) {
 	if ( 'sgnl_event' !== $type ) {
 		return;
 	}
+	wp_dropdown_categories( array(
+		'taxonomy'        => 'sgnl_event_cat',
+		'name'            => 'sgnl_event_cat',
+		'value_field'     => 'slug',
+		'show_option_all' => __( 'Alle Kategorien', 'sgnl-core' ),
+		'selected'        => sanitize_title( wp_unslash( $_GET['sgnl_event_cat'] ?? '' ) ), // phpcs:ignore WordPress.Security.NonceVerification
+		'hide_empty'      => false,
+	) );
 	printf( '<a class="button" href="%s" target="_blank" rel="noopener" style="margin-left:4px">%s</a>', esc_url( sgnl_events_pdf_url() ), esc_html__( 'Terminplan als PDF', 'sgnl-core' ) );
 } );
 
@@ -1240,3 +1441,53 @@ add_action( 'init', function () {
 	add_role( 'sgnl_terminverwaltung', __( 'Terminverwaltung', 'sgnl-core' ), array_merge( array( 'read' => true, 'upload_files' => true ), array_fill_keys( $caps, true ) ) );
 	update_option( 'sgnl_event_caps', '2' );
 }, 5 );
+
+/**
+ * Wie sicher sind zwei Einträge desselben Tages dieselbe Veranstaltung? (0–100)
+ *
+ * Am selben Tag – auch am selben Ort – kann es mehrere Veranstaltungen geben
+ * (z. B. Bezirks-Masters und Kreismeisterschaften). Deshalb zählt vor allem,
+ * ob die unterscheidenden Wörter im Namen übereinstimmen; allgemeine Wörter wie
+ * "Meisterschaften" oder "Schwimmfest" werden ignoriert.
+ *
+ * @param string $t1 Name 1.
+ * @param string $o1 Ort 1.
+ * @param string $t2 Name 2.
+ * @param string $o2 Ort 2.
+ * @return float
+ */
+function sgnl_event_match_score( $t1, $o1, $t2, $o2 ) {
+	$tokens = function ( $t ) {
+		$t = mb_strtolower( (string) $t );
+		$t = str_replace( array( 'ä', 'ö', 'ü', 'ß' ), array( 'ae', 'oe', 'ue', 'ss' ), $t );
+		$t = preg_replace( '/(meisterschaften|meisterschaft|schwimmfest|schwimmen)/u', ' ', $t );
+		$stop = array( 'nationales', 'nationale', 'internationales', 'internationale', 'int', 'nat', 'der', 'des', 'die', 'das', 'und', 'auf', 'im', 'in', 'am', 'von', 'fuer', 'mit', 'kreis-', 'ev' );
+		$out  = array();
+		foreach ( preg_split( '/[^a-z]+/', $t ) as $w ) {
+			if ( strlen( $w ) >= 3 && ! in_array( $w, $stop, true ) ) {
+				$out[ $w ] = true;
+			}
+		}
+		return array_keys( $out );
+	};
+	$a        = $tokens( $t1 );
+	$b        = $tokens( $t2 );
+	$norm_ort = function ( $o ) {
+		return preg_replace( '/[^a-z0-9]/', '', str_replace( array( 'ä', 'ö', 'ü', 'ß' ), array( 'ae', 'oe', 'ue', 'ss' ), mb_strtolower( (string) $o ) ) );
+	};
+	$same_ort = $o1 && $o2 && $norm_ort( $o1 ) === $norm_ort( $o2 );
+	if ( ! $a || ! $b ) {
+		return $same_ort ? 55 : 0; // Nur allgemeine Wörter im Namen – Ort entscheidet.
+	}
+	$hit = 0;
+	foreach ( $a as $x ) {
+		foreach ( $b as $y ) {
+			similar_text( $x, $y, $p );
+			if ( $x === $y || $p >= 80 || ( strlen( $x ) >= 5 && strlen( $y ) >= 5 && ( 0 === strpos( $x, $y ) || 0 === strpos( $y, $x ) ) ) ) {
+				$hit++;
+				break;
+			}
+		}
+	}
+	return 80 * $hit / min( count( $a ), count( $b ) ) + ( $same_ort ? 20 : 0 );
+}

@@ -110,7 +110,12 @@ function sgnl_migration_page() {
 		if ( 'db_import' === $action ) {
 			$rows = get_transient( 'sgnl_db_preview_' . get_current_user_id() );
 			if ( is_array( $rows ) ) {
-				$r = SGNL_DB_Import::run( $rows );
+				$manual = array();
+				foreach ( (array) wp_unslash( $_POST['sgnl_map'] ?? array() ) as $wk => $pid ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+					$pid = absint( $pid );
+					$manual[ absint( $wk ) ] = ( $pid && 'sgnl_event' === get_post_type( $pid ) ) ? $pid : 0;
+				}
+				$r = SGNL_DB_Import::run( $rows, $manual );
 				delete_transient( 'sgnl_db_preview_' . get_current_user_id() );
 				$messages[] = array( 'success', sprintf( __( 'Wettkämpfe übernommen: %1$d Termine ergänzt, %2$d neu angelegt, %3$d Nachrichten.', 'sgnl-core' ), $r['merged'], $r['created'], $r['messages'] ) );
 			}
@@ -446,19 +451,25 @@ function sgnl_db_import_card() {
 		<h3><?php esc_html_e( 'a) Wettkämpfe übernehmen', 'sgnl-core' ); ?></h3>
 		<?php if ( is_array( $rows ) && $rows ) : ?>
 			<table class="widefat striped">
-				<thead><tr><th><?php esc_html_e( 'Datum', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Wettkampf', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Links', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Wird …', 'sgnl-core' ); ?></th></tr></thead>
+				<thead><tr><th><?php esc_html_e( 'Datum', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Wettkampf', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Links', 'sgnl-core' ); ?></th><th><?php esc_html_e( 'Zuordnung', 'sgnl-core' ); ?></th></tr></thead>
 				<tbody>
 				<?php $map = SGNL_DB_Import::assign( $rows ); foreach ( $rows as $r ) : $m = $map[ $r['wk_id'] ]; ?>
 					<tr>
 						<td><?php echo esc_html( sgnl_event_date_label( array( 'start' => $r['start'], 'end' => $r['end'] ), true ) . ( $r['start_time'] ? ' · ' . $r['start_time'] . ( $r['end_time'] ? '–' . $r['end_time'] : '' ) : '' ) ); ?></td>
 						<td><?php echo esc_html( $r['title'] . ( $r['ort'] ? ' (' . $r['ort'] . ')' : '' ) ); ?><?php echo $r['nachrichten'] ? '<br><small>' . (int) count( $r['nachrichten'] ) . ' ' . esc_html__( 'Nachrichten', 'sgnl-core' ) . '</small>' : ''; ?></td>
 						<td><?php echo esc_html( implode( ', ', array_filter( array( $r['meldeuebersicht'] ? 'Meldeübersicht' : '', $r['meldeergebnis'] ? 'Meldeergebnis' : '', $r['livetiming'] ? 'Live-Timing' : '', $r['protokoll'] ? 'Protokoll' : '' ) ) ) ); ?></td>
-						<td><?php echo $m ? esc_html__( 'ergänzt:', 'sgnl-core' ) . ' <a href="' . esc_url( get_edit_post_link( $m ) ) . '">' . esc_html( get_the_title( $m ) ) . '</a>' : esc_html__( 'neu angelegt', 'sgnl-core' ); ?></td>
+						<td><select name="sgnl_map[<?php echo (int) $r['wk_id']; ?>]" form="sgnl-db-import">
+							<option value="0"><?php esc_html_e( 'Neu anlegen', 'sgnl-core' ); ?></option>
+							<?php foreach ( SGNL_DB_Import::candidates( $r['start'] ) as $c ) : ?>
+								<option value="<?php echo (int) $c->ID; ?>" <?php selected( $m, $c->ID ); ?>><?php echo esc_html( sprintf( /* translators: %s: Termin */ __( 'Ergänzen: %s', 'sgnl-core' ), get_the_title( $c ) . ( get_post_meta( $c->ID, '_sgnl_ort', true ) ? ' (' . get_post_meta( $c->ID, '_sgnl_ort', true ) . ')' : '' ) ) ); ?></option>
+							<?php endforeach; ?>
+						</select></td>
 					</tr>
 				<?php endforeach; ?>
 				</tbody>
 			</table>
-			<form method="post" style="margin-top:.8rem">
+			<p class="description"><?php esc_html_e( 'Am selben Tag kann es mehrere Veranstaltungen geben – bitte die Zuordnung prüfen und bei Bedarf ändern.', 'sgnl-core' ); ?></p>
+			<form method="post" id="sgnl-db-import" style="margin-top:.8rem">
 				<?php wp_nonce_field( 'sgnl_migration' ); ?>
 				<button class="button button-primary" name="sgnl_action" value="db_import"><?php esc_html_e( 'Wettkämpfe übernehmen', 'sgnl-core' ); ?></button>
 			</form>
