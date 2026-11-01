@@ -17,13 +17,7 @@ Das Plugin fragt das neueste [Release](../../releases) ab. Neue Versionen ersche
 **Dashboard → Aktualisierungen** bzw. **Plugins** („Details anzeigen“ zeigt die Änderungen).
 
 ## Neue Version veröffentlichen
-1. Änderungen committen.
-2. Versionsnummer erhöhen in `sgnl-core.php` – im Kopf (`Version:`) **und** bei `SGNL_CORE_VERSION`.
-3. Tag mit Beschreibung anlegen und pushen:
-   ```bash
-   git tag -a v1.2.1 -m "Was sich geändert hat"
-   git push origin main --tags
-   ```
-4. Die GitHub-Action baut `sgnl-core.zip` und legt das Release an.
-
-Lizenz: GPL-3.0-or-later.
+1. Änderungen machen und die Versionsnummer erhöhen in `sgnl-core.php` – im Kopf (`Version:`) **und** bei `SGNL_CORE_VERSION`, z. B. auf `1.2.1`.
+2. Commit auf `main` pushen. Die Commit-Nachrichten seit der letzten Version erscheinen in WordPress als Änderungsliste.
+3. Die GitHub-Action merkt die neue Versionsnummer, baut die ZIP und legt das Release `v1.2.1` an.
+   Ohne neue Versionsnummer wird kein Release erstellt.
