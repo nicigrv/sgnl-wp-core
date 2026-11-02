@@ -307,7 +307,7 @@ t_has( $tt, 'is-teams', 'Mannschaften-Kacheln' );
 t_has( $tt, '1. Mannschaft', 'Kachel mit Mannschaftsname' );
 t_has( $tt, 'Trainer: Uschi Bischer, Christel Mörstedt', 'Kachel nennt die Trainer' );
 t_ok( strpos( $tt, '1. Mannschaft' ) < strpos( $tt, 'Bambinis' ), 'Reihenfolge nach „Reihenfolge“ der Seiten' );
-t_has( $tt, 'wp-image-' . $imgs[1], 'Kachelbild ist das Mannschaftsfoto' );
+t_has( $tt, basename( (string) wp_get_attachment_url( $imgs[1] ) ), 'Kachelbild ist das Mannschaftsfoto' );
 t_ok( sgnl_teams_page_insert(), 'Übersicht wird in „Unsere Mannschaften“ eingesetzt' );
 t_ok( ! sgnl_teams_page_insert(), 'Nur einmal eingesetzt' );
 t_has( get_post( $teams )->post_content, 'wp:sgnl/albums {"align":"wide","mode":"teams"}', 'Block im Seiteninhalt' );
