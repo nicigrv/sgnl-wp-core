@@ -41,6 +41,25 @@ ct=$(curl -s -o /tmp/terminplan.pdf -w '%{content_type}' "$BASE/?sgnl-terminplan
 qpdf --check /tmp/terminplan.pdf > /dev/null && ok "PDF (Website) ist gültig" || fail "PDF (Website) ungültig"
 qpdf --check "$DIR/test.pdf" > /dev/null && ok "PDF (70 Termine, mehrseitig) ist gültig" || fail "PDF (mehrseitig) ungültig"
 
+echo "== Vereinsdaten (webclub über die eigene Website)"
+J=/tmp/wc-cookies.txt; rm -f $J
+code=$(curl -s -c $J -b $J -o /tmp/wc.html -w '%{http_code}' "$BASE/vereinsdaten/oeffentlich-ergebnisse-ex.php")
+if [ "$code" = "502" ]; then
+  echo "  WARN webclub gerade nicht erreichbar – Prüfung übersprungen"
+else
+  [ "$code" = "200" ] && ok "Ergebnisse-Seite → 200" || fail "Ergebnisse-Seite → $code"
+  grep -q 'Ergebnisse' /tmp/wc.html && ok "Inhalt der Ergebnisse-Seite" || fail "Ergebnisse-Seite ohne Inhalt"
+  grep -qi 'webclub\.app' /tmp/wc.html && fail "webclub-Adresse in der Seite" || ok "keine webclub-Adresse in der Seite"
+  ajax=$(curl -s -c $J -b $J -o /tmp/wc.json -w '%{http_code}' --data-urlencode 'func=oeff/verlist' --data-urlencode 'data={"start":0,"openid":"0","sitetyp":"-ex","listSORT":"0","listCOUNT":"10"}' "$BASE/vereinsdaten/ajax.php")
+  [ "$ajax" = "200" ] && grep -q '"list"' /tmp/wc.json && ok "Datenabfrage (Liste der Veranstaltungen)" || { fail "Datenabfrage → $ajax"; head -c 300 /tmp/wc.json; echo; }
+  deny=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode 'func=std/login' "$BASE/vereinsdaten/ajax.php")
+  [ "$deny" = "403" ] && ok "Nicht öffentliche Funktionen gesperrt" || fail "std/login → $deny"
+  js=$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$BASE/vereinsdaten/cdn/v1.79/js/jquery.min.js")
+  case "$js" in 200*javascript*) ok "Skripte über die eigene Website ($js)";; *) fail "Skript: $js";; esac
+  sw=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/oeffentlich-schwimmer-ex.php")
+  [ "$sw" = "200" ] && ok "Sprung zur Schwimmerseite" || fail "Schwimmerseite → $sw"
+fi
+
 echo "== PHP-Fehlerprotokoll"
 if grep -E 'PHP (Fatal|Parse|Warning|Notice)' /tmp/wp-debug.log; then fail "PHP-Fehler/Warnungen im Protokoll"; else ok "keine PHP-Fehler oder Warnungen"; fi
 

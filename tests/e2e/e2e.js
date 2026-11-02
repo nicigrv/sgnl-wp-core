@@ -54,9 +54,25 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
 
     await page.goto(BASE + '/datenbank/#termine', { waitUntil: 'networkidle' });
     (await page.getAttribute('.sgnl-db__tab[data-tab="termine"]', 'aria-selected')) === 'true' ? ok('Datenbank: Reiter aus der Adresse (#termine)') : fail('Datenbank: #termine nicht ausgewählt');
+    const external = [];
+    page.on('request', r => { if (/webclub/i.test(r.url())) external.push(r.url()); });
     await page.click('.sgnl-db__tab[data-tab="ergebnisse"]');
     (await page.evaluate(() => location.hash)) === '#ergebnisse' ? ok('Datenbank: Reiterwechsel ändert die Adresse') : fail('Datenbank: Adresse nicht geändert');
-    (await page.isVisible('.sgnl-db__panel[data-tab="ergebnisse"] [data-role="gate"]')) ? ok('Datenbank: externer Inhalt erst nach Zustimmung') : fail('Datenbank: Zustimmungs-Hinweis fehlt');
+    (await page.$('.sgnl-db [data-act="open"]')) ? fail('Datenbank: Link „Neues Fenster“ ist noch da') : ok('Datenbank: kein Link „Neues Fenster“');
+    const fitted = await page.waitForFunction(() => {
+      const b = document.querySelector('.sgnl-db__panel[data-tab="ergebnisse"] .sgnl-db__body');
+      const f = b && b.querySelector('iframe');
+      if (!b || !f || !b.hasAttribute('data-auto')) return false;
+      const d = f.contentDocument; if (!d || !d.querySelector('table tbody tr')) return false;
+      return { frame: f.getBoundingClientRect().height, content: d.body.scrollHeight };
+    }, null, { timeout: 45000 }).then(h => h.jsonValue()).catch(() => null);
+    if (fitted === null) {
+      console.log('  WARN Ergebnisse nicht geladen (webclub nicht erreichbar?) – Höhenprüfung übersprungen');
+    } else {
+      fitted.frame >= fitted.content - 4 ? ok(`Datenbank: Rahmen passt sich an (${Math.round(fitted.frame)}px, kein Scrollen im Rahmen)`) : fail(`Datenbank: Rahmen ${fitted.frame}px < Inhalt ${fitted.content}px`);
+      await page.screenshot({ path: path.join(SHOTS, 'datenbank-ergebnisse-desktop.png'), fullPage: true });
+    }
+    external.length ? fail('Browser lädt etwas von webclub: ' + external[0]) : ok('Browser lädt nichts von webclub');
     await page.click('.sgnl-db__tab[data-tab="live"]');
     (await page.isVisible('.sgnl-live')) ? ok('Datenbank: Live-Reiter') : fail('Datenbank: Live nicht sichtbar');
     await page.screenshot({ path: path.join(SHOTS, 'datenbank-live-desktop.png'), fullPage: true });

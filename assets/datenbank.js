@@ -16,7 +16,6 @@
 		var panels = Array.prototype.slice.call(db.querySelectorAll('.sgnl-db__panel'));
 		var label = db.querySelector('.sgnl-db__label');
 		var rope = db.querySelector('.sgnl-db__rope');
-		var openBtn = db.querySelector('[data-act="open"]');
 		var frame = db.querySelector('.sgnl-db__frame');
 		var current = null;
 		var allowedOnce = {};
@@ -50,6 +49,13 @@
 			f.src = src + (force ? (src.indexOf('?') > -1 ? '&' : '?') + 'r=' + Date.now() : '');
 			var done = false;
 			f.addEventListener('load', function () { done = true; show(null, panel, 'none'); });
+			// Gleiche Herkunft (über die eigene Website): Höhe an den Inhalt anpassen
+			if (window.sgnlFitFrame) {
+				window.sgnlFitFrame(f, function (h) {
+					body.setAttribute('data-auto', '');
+					body.style.height = h + 'px';
+				});
+			}
 			setTimeout(function () { if (!done) { show(null, panel, 'error'); } }, TIMEOUT);
 			body.appendChild(f);
 		}
@@ -68,8 +74,7 @@
 			var panel = panelOf(id);
 			label.textContent = panel.getAttribute('data-label');
 			var isFrame = panel.hasAttribute('data-src');
-			openBtn.hidden = !isFrame;
-			if (isFrame) { openBtn.href = panel.getAttribute('data-src'); loadIframe(panel, false); }
+			if (isFrame) { loadIframe(panel, false); }
 			if (!isFrame) {
 				var live = panel.querySelector('.sgnl-live');
 				if (live && live.sgnlRefresh && opts.user) { live.sgnlRefresh(); }

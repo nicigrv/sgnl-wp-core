@@ -52,11 +52,18 @@ function sgnl_render_iframe_block( $a ) {
 	if ( '' === $title ) {
 		$title = $host;
 	}
+	// Seiten von der eigenen Website (z. B. /vereinsdaten/…): Höhe passt sich dem Inhalt an.
+	$fit = sgnl_is_own_host( $src ) && false !== strpos( $src, '/vereinsdaten/' );
+	if ( $fit ) {
+		wp_enqueue_script( 'sgnl-frame-fit' );
+		$title = 'SG Neptun Lampertheim' === $title || '' === $title || $title === $host ? __( 'Vereinsdatenbank', 'sgnl-core' ) : $title;
+	}
 	$iframe = sprintf(
-		'<iframe src="%1$s" title="%2$s" style="height:%3$dpx" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen; clipboard-write"></iframe>',
+		'<iframe src="%1$s" title="%2$s" style="height:%3$dpx" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen; clipboard-write"%4$s></iframe>',
 		$src,
 		esc_attr( $title ),
-		$height
+		$height,
+		$fit ? ' data-sgnl-fit scrolling="no"' : ''
 	);
 	$align = in_array( $a['align'] ?? '', array( 'wide', 'full' ), true ) ? ' align' . $a['align'] : '';
 	return '<div class="sgnl-iframe' . esc_attr( $align ) . '">' . sgnl_consent_gate_iframe( $iframe, $src, $height ) . '</div>';

@@ -308,7 +308,27 @@ foreach ( array( 'live', 'termine', 'ergebnisse', 'bestenliste', 'rekorde' ) as 
 	t_has( $dbh, 'data-tab="' . $tab . '"', "Reiter {$tab}" );
 }
 t_not( $dbh, 'oeffentlich-termine-ex.php', 'Kein webclub-Terminplan' );
-t_has( $dbh, 'data-role="gate"', 'Externe Reiter erst nach Zustimmung' );
+t_not( $dbh, 'webclub', 'Keine webclub-Adresse auf der Seite' );
+t_not( $dbh, 'data-act="open"', 'Kein Link „Neues Fenster“' );
+t_has( $dbh, 'data-src="' . home_url( '/vereinsdaten/oeffentlich-ergebnisse-ex.php' ) . '"', 'Ergebnisse kommen über die eigene Website' );
+t_not( $dbh, 'data-role="gate"', 'Keine Zustimmung nötig (nichts Externes)' );
+
+t_section( 'Vereinsdaten über die eigene Website' );
+t_eq( sgnl_wc_target( '/vereinsdaten/oeffentlich-ergebnisse-ex.php' ), array( 'https://sgnl.webclub.app/oeffentlich-ergebnisse-ex.php', false ), 'Seite wird weitergereicht' );
+t_eq( sgnl_wc_target( '/vereinsdaten/ajax.php' ), array( 'https://sgnl.webclub.app/ajax.php', false ), 'Datenabfrage wird weitergereicht' );
+t_eq( sgnl_wc_target( '/oeffentlich-schwimmer-ex.php' ), array( 'https://sgnl.webclub.app/oeffentlich-schwimmer-ex.php', false ), 'Sprung zur Schwimmerseite funktioniert' );
+t_eq( sgnl_wc_target( '/vereinsdaten/cdn/v1.79/js/jquery.min.js' ), array( 'https://cdn.webclub.app/v1.79/js/jquery.min.js', true ), 'Skripte/Bilder kommen über die eigene Website' );
+t_eq( sgnl_wc_target( '/vereinsdaten/intern-mitglieder.php' ), null, 'Interne webclub-Seiten werden nicht weitergereicht' );
+t_eq( sgnl_wc_target( '/vereinsdaten/cdn/../etc/passwd' ), null, 'Kein Ausbrechen aus dem Pfad' );
+t_eq( sgnl_wc_target( '/wp-login.php' ), null, 'Normale Seiten bleiben unberührt' );
+$rw = sgnl_wc_rewrite( '<html><head><link href="https://cdn.webclub.app/v1/css/a.css"></head><body><a href="https://sgnl.webclub.app/x.php">x</a></body></html>', 'text/html; charset=utf-8' );
+t_not( $rw, 'webclub', 'Alle webclub-Adressen werden umgeschrieben' );
+t_has( $rw, home_url( '/vereinsdaten/cdn/v1/css/a.css' ), 'CDN-Adresse zeigt auf die eigene Website' );
+t_has( $rw, 'id="sgnl-wc"', 'Eigene Gestaltung wird eingefügt' );
+$ifr = render_block( array( 'blockName' => 'sgnl/iframe', 'attrs' => array( 'src' => 'https://sgnl.webclub.app/oeffentlich-rekorde-ex.php', 'height' => 900 ), 'innerBlocks' => array(), 'innerHTML' => '', 'innerContent' => array() ) );
+t_has( $ifr, home_url( '/vereinsdaten/oeffentlich-rekorde-ex.php' ), 'Block „Eingebettete Seite“ mit webclub-Adresse → eigene Website' );
+t_has( $ifr, 'data-sgnl-fit', '… mit automatischer Höhe' );
+t_not( $ifr, 'sgnl-gate', '… ohne Zustimmungs-Hinweis' );
 $urls[] = '/datenbank/';
 $urls[] = '/datenbank/trainer/';
 

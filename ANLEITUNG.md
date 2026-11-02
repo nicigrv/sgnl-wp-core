@@ -73,6 +73,10 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
 - In der Terminliste: Filter „Terminplan“ / „Archiv JJJJ“, A/E/P zeigt Ausschreibung/Ergebnisse/Protokoll,
   „Duplizieren“ für wiederkehrende Veranstaltungen.
 
+## Vereinsdaten ohne webclub-Adresse – ab Version 1.7.0
+- Die webclub-Ansichten laufen über sgnl.de/vereinsdaten/… – kein „Neues Fenster“, kein Scrollen im Rahmen.
+- Weitergereicht werden nur die öffentlichen Ansichten und deren Datenabfragen (Anmeldung usw. gesperrt).
+
 ## Startseite: nächste Termine – ab Version 1.6.0
 - In der Kachel „Terminplan“ auf der Startseite stehen automatisch die nächsten 3 Termine
   (wird beim Update einmalig eingesetzt; vorher gesicherter Inhalt bleibt erhalten).
@@ -110,8 +114,10 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
   sobald ein Link oder eine Nachricht eingetragen ist. Läuft gerade einer, pulsiert ein roter Punkt am Reiter.
 - **Rolle „Terminverwaltung“** (Benutzer → Neu): darf nur Termine pflegen und Dateien hochladen –
   z. B. für Trainer, die bisher im Datenbank-Admin (Microsoft-Login) eingetragen haben.
-- Ergebnisse, Bestenliste, Rekorde, Schwimmer, Meldungen kommen weiter aus sgnl.webclub.app und laden
-  erst nach Zustimmung zu externen Inhalten.
+- Ergebnisse, Bestenliste, Rekorde, Schwimmer, Meldungen kommen weiter aus der Vereinsdatenbank (webclub),
+  werden aber **über sgnl.de ausgeliefert** (/vereinsdaten/…): Besucher sehen nie die webclub-Adresse,
+  der Rahmen wächst mit dem Inhalt (kein Scrollen im Rahmen) und es ist keine Zustimmung zu externen
+  Inhalten nötig. Auch der Block „Eingebettete Seite“ mit einer webclub-Adresse (z. B. Rekorde) läuft so.
 - Block „Datenbank“ (Reiter frei wählbar) und Block „Live-Wettkämpfe“ lassen sich auf jeder Seite einsetzen.
 
 ### Subdomain datenbank.sgnl.de entfernen
@@ -123,7 +129,7 @@ Nach Schritt 7 (a und b) läuft alles auf sgnl.de – die Subdomain wird nicht m
 2. Den alten Ordner der Subdomain auf dem Webspace löschen (vorher sichern).
 3. Die alte MySQL-Datenbank der Subdomain löschen (erst nach Schritt 7a!).
 4. In Microsoft Entra (portal.azure.com) die App-Registrierung für den alten Datenbank-Login löschen.
-5. In webclub die Höhenmeldung (iframe-hoehe.html) durch die neue Version ersetzen.
+5. Die Höhenmeldung (iframe-hoehe.html) in webclub wird nicht mehr gebraucht.
 
 ## Galerien – ab Version 1.3.0
 - **Einmalig:** Werkzeuge → SG Neptun Umstellung → Schritt 6 „Galerien einrichten“.
