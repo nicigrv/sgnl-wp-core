@@ -29,6 +29,9 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
     for (const u of urls) {
       errors.length = 0;
       await page.goto(BASE + u, { waitUntil: 'networkidle' });
+      // Cookie-Banner: „Nur notwendige“ (damit er die Screenshots nicht verdeckt)
+      const nec = page.locator('#sgnl-consent button', { hasText: 'Nur notwendige' });
+      if (await nec.count() && await nec.first().isVisible()) { await nec.first().click(); await page.waitForTimeout(200); }
       const file = (u.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'start') + '-' + name + '.png';
       await page.screenshot({ path: path.join(SHOTS, file), fullPage: true });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
