@@ -61,6 +61,8 @@ add_action( 'init', function () {
 			'parent' => array( 'type' => 'number', 'default' => 0 ),
 			'align'  => array( 'type' => 'string' ),
 			'mode'   => array( 'type' => 'string', 'default' => 'gallery' ),
+			'photo'  => array( 'type' => 'number', 'default' => 1 ),
+			'images' => array( 'type' => 'object', 'default' => array() ),
 		),
 		'render_callback' => function ( $a, $content, $block ) {
 			$parent = (int) ( $a['parent'] ?? 0 );
@@ -73,7 +75,10 @@ add_action( 'init', function () {
 			if ( ! $parent && isset( $_GET['post_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$parent = absint( $_GET['post_id'] ); // Vorschau im Editor.
 			}
-			return sgnl_albums_render( $parent, $a['align'] ?? null, $a['mode'] ?? 'gallery' );
+			return sgnl_albums_render( $parent, $a['align'] ?? null, $a['mode'] ?? 'gallery', array(
+				'photo'  => $a['photo'] ?? 1,
+				'images' => $a['images'] ?? array(),
+			) );
 		},
 	) );
 } );
@@ -153,10 +158,10 @@ function sgnl_albums_info( $page, $depth = 0 ) {
  * @param string|null $align  Ausrichtung.
  * @return string
  */
-function sgnl_albums_render( $parent, $align = null, $mode = 'gallery' ) {
+function sgnl_albums_render( $parent, $align = null, $mode = 'gallery', $opts = array() ) {
 	wp_enqueue_style( 'sgnl-albums' );
 	if ( 'teams' === $mode ) {
-		return sgnl_teams_render( $parent, $align );
+		return sgnl_teams_render( $parent, $align, $opts );
 	}
 	$kids  = $parent ? sgnl_albums_children( $parent ) : array();
 	$align = $align ? $align : 'wide';
@@ -249,10 +254,10 @@ add_filter( 'request', function ( $vars ) {
  * @param WP_Post $page Seite.
  * @return array photo, trainers
  */
-function sgnl_team_info( $page ) {
-	$photo    = 0;
+function sgnl_team_info( $page, $nth = 1 ) {
+	$photos   = array();
 	$trainers = array();
-	$walk     = function ( array $blocks, $in_team = false ) use ( &$walk, &$photo, &$trainers ) {
+	$walk     = function ( array $blocks, $in_team = false ) use ( &$walk, &$photos, &$trainers ) {
 		foreach ( $blocks as $b ) {
 			$name  = (string) $b['blockName'];
 			$class = (string) ( $b['attrs']['className'] ?? '' );
@@ -263,7 +268,7 @@ function sgnl_team_info( $page ) {
 					$trainers[] = $t;
 				}
 			}
-			if ( ! $photo && ! $team ) {
+			if ( ! $team ) {
 				$id = 0;
 				if ( 'core/image' === $name && false === strpos( $class, 'is-style-sgnl-portrait' ) ) {
 					$id = (int) ( $b['attrs']['id'] ?? 0 );
@@ -275,8 +280,8 @@ function sgnl_team_info( $page ) {
 				if ( ! $id && in_array( $name, array( 'core/image', 'core/cover' ), true ) && false === strpos( $class, 'is-style-sgnl-portrait' ) && preg_match( '/wp-image-(\d+)/', (string) $b['innerHTML'], $m ) ) {
 					$id = (int) $m[1];
 				}
-				if ( $id && wp_attachment_is_image( $id ) ) {
-					$photo = $id;
+				if ( $id && wp_attachment_is_image( $id ) && ! in_array( $id, $photos, true ) ) {
+					$photos[] = $id;
 				}
 			}
 			if ( ! empty( $b['innerBlocks'] ) ) {
@@ -285,10 +290,15 @@ function sgnl_team_info( $page ) {
 		}
 	};
 	$walk( parse_blocks( $page->post_content ) );
-	if ( ! $photo ) {
+	$nth = max( 1, (int) $nth );
+	if ( isset( $photos[ $nth - 1 ] ) ) {
+		$photo = $photos[ $nth - 1 ];
+	} elseif ( $photos ) {
+		$photo = end( $photos ); // weniger Fotos als gewünscht: das letzte
+	} else {
 		$photo = (int) get_post_thumbnail_id( $page );
 	}
-	return array( 'photo' => $photo, 'trainers' => array_values( array_unique( $trainers ) ) );
+	return array( 'photo' => (int) $photo, 'photos' => $photos, 'trainers' => array_values( array_unique( $trainers ) ) );
 }
 
 /**
@@ -298,7 +308,9 @@ function sgnl_team_info( $page ) {
  * @param string|null $align  Ausrichtung.
  * @return string
  */
-function sgnl_teams_render( $parent, $align = null ) {
+function sgnl_teams_render( $parent, $align = null, $opts = array() ) {
+	$nth    = max( 1, (int) ( $opts['photo'] ?? 1 ) );
+	$chosen = is_array( $opts['images'] ?? null ) ? $opts['images'] : array();
 	$kids  = $parent ? sgnl_albums_children( $parent ) : array();
 	$align = $align ? $align : 'wide';
 	$cls   = 'sgnl-albums is-teams' . ( in_array( $align, array( 'wide', 'full' ), true ) ? ' align' . $align : '' );
@@ -309,7 +321,11 @@ function sgnl_teams_render( $parent, $align = null ) {
 	}
 	$h = '<div class="' . esc_attr( $cls ) . '">';
 	foreach ( $kids as $i => $kid ) {
-		$info = sgnl_team_info( $kid );
+		$info   = sgnl_team_info( $kid, $nth );
+		$manual = (int) ( $chosen[ $kid->ID ] ?? $chosen[ (string) $kid->ID ] ?? 0 );
+		if ( $manual && wp_attachment_is_image( $manual ) ) {
+			$info['photo'] = $manual;
+		}
 		$img  = $info['photo'] ? wp_get_attachment_image( $info['photo'], 'medium_large', false, array(
 			'class'   => 'sgnl-album__img',
 			'alt'     => '',

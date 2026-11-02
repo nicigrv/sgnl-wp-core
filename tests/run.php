@@ -283,7 +283,7 @@ $t1 = wp_insert_post( array(
 	'post_name'    => '1-mannschaft',
 	'post_parent'  => $teams,
 	'menu_order'   => 1,
-	'post_content' => "<!-- wp:paragraph -->\n<p>Die aktive Leistungsmannschaft.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:image {\"id\":{$imgs[1]},\"sizeSlug\":\"large\"} -->\n<figure class=\"wp-block-image size-large\"><img src=\"{$photo_url}\" alt=\"\" class=\"wp-image-{$imgs[1]}\"/></figure>\n<!-- /wp:image -->\n\n<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Trainer der 1. Mannschaft</h2>\n<!-- /wp:heading -->\n\n" . $team_grid( array( $card( $imgs[0], 'Uschi Bischer' ), $card( $imgs[2], 'Christel Mörstedt' ) ) )
+	'post_content' => "<!-- wp:paragraph -->\n<p>Die aktive Leistungsmannschaft.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:image {\"id\":{$imgs[1]},\"sizeSlug\":\"large\"} -->\n<figure class=\"wp-block-image size-large\"><img src=\"{$photo_url}\" alt=\"\" class=\"wp-image-{$imgs[1]}\"/></figure>\n<!-- /wp:image -->\n\n<!-- wp:image {\"id\":{$imgs[2]},\"sizeSlug\":\"large\"} -->\n<figure class=\"wp-block-image size-large\"><img src=\"" . wp_get_attachment_url( $imgs[2] ) . "\" alt=\"\" class=\"wp-image-{$imgs[2]}\"/></figure>\n<!-- /wp:image -->\n\n<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Trainer der 1. Mannschaft</h2>\n<!-- /wp:heading -->\n\n" . $team_grid( array( $card( $imgs[0], 'Uschi Bischer' ), $card( $imgs[2], 'Christel Mörstedt' ) ) )
 		. "\n\n<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Linksbündig</h2>\n<!-- /wp:heading -->\n\n" . $team_grid( array( $card( $imgs[0], 'Anna Links' ), $card( $imgs[2], 'Ben Links' ) ), 'is-team-left' ),
 ) );
 set_post_thumbnail( $t1, $imgs[2] );
@@ -308,6 +308,11 @@ t_has( $tt, '1. Mannschaft', 'Kachel mit Mannschaftsname' );
 t_has( $tt, 'Trainer: Uschi Bischer, Christel Mörstedt', 'Kachel nennt die Trainer' );
 t_ok( strpos( $tt, '1. Mannschaft' ) < strpos( $tt, 'Bambinis' ), 'Reihenfolge nach „Reihenfolge“ der Seiten' );
 t_has( $tt, basename( (string) wp_get_attachment_url( $imgs[1] ) ), 'Kachelbild ist das Mannschaftsfoto' );
+t_eq( sgnl_team_info( get_post( $t1 ), 2 )['photo'], $imgs[2], 'Einstellung „2. Foto“' );
+t_eq( sgnl_team_info( get_post( $t1 ), 5 )['photo'], $imgs[2], 'Weniger Fotos als gewünscht: das letzte' );
+$tm = sgnl_albums_render( $teams, 'wide', 'teams', array( 'photo' => 1, 'images' => array( (string) $t1 => $imgs[0] ) ) );
+t_has( $tm, basename( (string) wp_get_attachment_url( $imgs[0] ) ), 'Selbst gewähltes Bild wird verwendet' );
+t_not( $tm, basename( (string) wp_get_attachment_url( $imgs[1] ) ), '… statt des automatischen' );
 t_ok( sgnl_teams_page_insert(), 'Übersicht wird in „Unsere Mannschaften“ eingesetzt' );
 t_ok( ! sgnl_teams_page_insert(), 'Nur einmal eingesetzt' );
 t_has( get_post( $teams )->post_content, 'wp:sgnl/albums {"align":"wide","mode":"teams"}', 'Block im Seiteninhalt' );
@@ -485,7 +490,7 @@ if ( function_exists( 'sgnl_first_section_color' ) ) {
  * ====================================================================== */
 $urls = array_merge( array( '/', '/terminplan/', '/archiv/archiv-' . $y2 . '/', '/wp-json/sgnl/v1/live', '/?sgnl-terminplan=pdf' ), $urls );
 file_put_contents( __DIR__ . '/ci/urls.txt', implode( "\n", $urls ) . "\n" );
-$ids = array( $tp_page, $archiv_page, $root->ID, $yp->ID, $dlp->ID, $db->ID, $post_with_link );
+$ids = array( $tp_page, $archiv_page, $root->ID, $yp->ID, $dlp->ID, $db->ID, $post_with_link, $teams );
 file_put_contents( __DIR__ . '/ci/editor-ids.txt', implode( ' ', $ids ) . "\n" );
 
 $t = $GLOBALS['sgnl_t'];

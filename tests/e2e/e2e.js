@@ -138,6 +138,21 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
       });
       res.bad.length ? fail(`Editor „${res.title}“: ungültige Blöcke ${res.bad.join(', ')}`) : ok(`Editor „${res.title}“: ${res.total} Blöcke gültig`);
     }
+    // Mannschaften-Übersicht: Bildauswahl im Editor
+    {
+      const tid = ids[ids.length - 1];
+      await page.goto(`${BASE}/wp-admin/post.php?post=${tid}&action=edit`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => window.wp && wp.data && wp.data.select('core/block-editor').getBlocks().length, null, { timeout: 60000 });
+      const cid = await page.evaluate(() => { const b = wp.data.select('core/block-editor').getBlocks().find(x => x.name === 'sgnl/albums'); if (b) { wp.data.dispatch('core/block-editor').selectBlock(b.clientId); } return b ? b.clientId : null; });
+      if (!cid) { fail('Editor: Mannschaften-Übersicht nicht gefunden'); }
+      else {
+        const ed = page.frameLocator('iframe[name="editor-canvas"]');
+        const sidebar = page.locator('.interface-complementary-area, .editor-sidebar').first();
+        const okPanel = await page.waitForFunction(() => /Bilder der Mannschaften/.test(document.body.innerText) && /1\. Mannschaft/.test(document.body.innerText), null, { timeout: 30000 }).then(() => true).catch(() => false);
+        okPanel ? ok('Editor: Bildauswahl je Mannschaft sichtbar') : fail('Editor: Bildauswahl fehlt');
+        await page.screenshot({ path: path.join(SHOTS, 'admin-mannschaften-bilder.png'), fullPage: false });
+      }
+    }
     // Termin-Formular
     await page.goto(`${BASE}/wp-admin/post-new.php?post_type=sgnl_event`, { waitUntil: 'networkidle' });
     (await page.isVisible('#sgnl-ev-start')) ? ok('Termin-Formular öffnet') : fail('Termin-Formular fehlt');

@@ -170,8 +170,12 @@ Nach Schritt 7 (a und b) läuft alles auf sgnl.de – die Subdomain wird nicht m
 - **„Unsere Mannschaften“** zeigt alle Unterseiten (1.–4. Mannschaft, Bambinis, Masters …) als Kacheln –
   wie die Galerie-Übersicht. Der Block wird beim ersten Öffnen des Dashboards nach dem Update einmal
   automatisch unter den vorhandenen Text gesetzt.
-- **Bild der Kachel** = das erste Foto auf der Mannschaftsseite (die runden Trainer-Porträts zählen nicht).
+- **Bild der Kachel** = ein Foto von der Mannschaftsseite (die runden Trainer-Porträts zählen nicht).
   Gibt es dort kein Foto, wird das Beitragsbild genommen. Unter dem Namen stehen die Trainer aus den Team-Karten.
+  - **Welches Foto:** Übersicht im Editor anklicken → rechts **„Bilder der Mannschaften → Automatisch verwenden“**:
+    1., **2.**, 3. … Foto der Seite (gilt für alle Mannschaften).
+  - **Eigenes Bild:** darunter bei der jeweiligen Mannschaft **„Wählen“** → Bild aus der Mediathek. „Automatisch“
+    setzt es zurück. Ein eigenes Bild hat immer Vorrang. (ab 1.8.1)
 - **Reihenfolge:** Seiten → Mannschaft → „Reihenfolge“ (kleinere Zahl = weiter vorne).
 - **Neue Mannschaft:** Seite anlegen, „Übergeordnete Seite“ = „Unsere Mannschaften“ – fertig.
 - **Block selbst einfügen:** „/Mannschaften-Übersicht“ (oder Galerie-Übersicht → rechts „Art: Mannschaften“).
