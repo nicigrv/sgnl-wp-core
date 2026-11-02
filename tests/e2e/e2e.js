@@ -59,13 +59,25 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
     await page.click('.sgnl-db__tab[data-tab="ergebnisse"]');
     (await page.evaluate(() => location.hash)) === '#ergebnisse' ? ok('Datenbank: Reiterwechsel ändert die Adresse') : fail('Datenbank: Adresse nicht geändert');
     (await page.$('.sgnl-db [data-act="open"]')) ? fail('Datenbank: Link „Neues Fenster“ ist noch da') : ok('Datenbank: kein Link „Neues Fenster“');
-    const fitted = await page.waitForFunction(() => {
+    const loaded = await page.waitForFunction(() => {
       const b = document.querySelector('.sgnl-db__panel[data-tab="ergebnisse"] .sgnl-db__body');
       const f = b && b.querySelector('iframe');
-      if (!b || !f || !b.hasAttribute('data-auto')) return false;
-      const d = f.contentDocument; if (!d || !d.querySelector('table tbody tr')) return false;
-      return { frame: f.getBoundingClientRect().height, content: d.body.scrollHeight };
-    }, null, { timeout: 45000 }).then(h => h.jsonValue()).catch(() => null);
+      const d = f && f.contentDocument;
+      return !!(b && b.hasAttribute('data-auto') && d && d.querySelector('table tbody tr'));
+    }, null, { timeout: 45000 }).then(() => true).catch(() => false);
+    const measureFit = () => page.evaluate(() => {
+      const f = document.querySelector('.sgnl-db__panel[data-tab="ergebnisse"] .sgnl-db__body iframe');
+      return { frame: f.getBoundingClientRect().height, content: f.contentDocument.body.scrollHeight };
+    });
+    let fitted = null;
+    if (loaded) {
+      // Inhalt wird nachgeladen → der Rahmen wächst mit (kurz warten, bis er nachgezogen hat)
+      await page.waitForFunction(() => {
+        const f = document.querySelector('.sgnl-db__panel[data-tab="ergebnisse"] .sgnl-db__body iframe');
+        return f.getBoundingClientRect().height >= f.contentDocument.body.scrollHeight - 4;
+      }, null, { timeout: 10000 }).catch(() => {});
+      fitted = await measureFit();
+    }
     if (fitted === null) {
       console.log('  WARN Ergebnisse nicht geladen (webclub nicht erreichbar?) – Höhenprüfung übersprungen');
     } else {
