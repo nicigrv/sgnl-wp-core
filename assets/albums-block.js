@@ -62,7 +62,8 @@
 			);
 			return h('div', blockProps,
 				h(be.InspectorControls, null,
-					h(comp.PanelBody, { title: teams ? 'Mannschaften-Übersicht' : 'Galerie-Übersicht', initialOpen: true },
+					teamPanel,
+					h(comp.PanelBody, { title: teams ? 'Mannschaften-Übersicht' : 'Galerie-Übersicht', initialOpen: !teams },
 						h(comp.SelectControl, {
 							label: 'Art', value: teams ? 'teams' : 'gallery', __nextHasNoMarginBottom: true,
 							options: [{ label: 'Galerien (Titelbild + Fotoanzahl)', value: 'gallery' }, { label: 'Mannschaften (Mannschaftsfoto + Trainer)', value: 'teams' }],
@@ -77,8 +78,7 @@
 							help: 'Leer lassen = Unterseiten dieser Seite.',
 							onChange: function (v) { props.setAttributes({ parent: parseInt(v, 10) || 0 }); }
 						})
-					),
-					teamPanel
+					)
 				),
 				h(SSR, { block: 'sgnl/albums', attributes: { parent: a.parent, mode: a.mode || 'gallery', photo: a.photo || 1, images: images }, urlQueryArgs: postId ? { post_id: postId } : {} })
 			);
