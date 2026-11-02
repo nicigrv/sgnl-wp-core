@@ -141,3 +141,7 @@
 
 /* Jahreszahlen groß */
 .sgnl-album.is-collection .sgnl-album__title { font-family: var(--font-wide, inherit); font-size: clamp(1.5rem, 2.6vw, 2.1rem); letter-spacing: .02em; }
+
+/* Mannschaften: Foto im Querformat, Name groß */
+.sgnl-albums.is-teams .sgnl-album__title { font-size: clamp(1.2rem, 1.9vw, 1.55rem); }
+.sgnl-albums.is-teams .sgnl-album__meta { display: block; max-width: 34ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

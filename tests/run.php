@@ -255,6 +255,67 @@ $urls[] = '/galerie/' . $y0 . '/dlp/';
 file_put_contents( __DIR__ . '/ci/redirect.txt', $old_gal_url . ' /galerie/' . $y0 . '/' );
 
 /* =========================================================================
+ * Mannschaften-Übersicht
+ * ====================================================================== */
+t_section( 'Mannschaften' );
+$card = function ( $img, $name ) {
+	$url = wp_get_attachment_url( $img );
+	return "<!-- wp:group -->\n<div class=\"wp-block-group\"><!-- wp:image {\"id\":{$img},\"className\":\"is-style-sgnl-portrait\"} -->\n<figure class=\"wp-block-image is-style-sgnl-portrait\"><img src=\"{$url}\" alt=\"\" class=\"wp-image-{$img}\"/></figure>\n<!-- /wp:image -->\n\n<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">{$name}</h3>\n<!-- /wp:heading --></div>\n<!-- /wp:group -->";
+};
+$team_grid = function ( $cards, $extra = '' ) {
+	$cls = trim( 'sgnl-team ' . $extra );
+	return "<!-- wp:group {\"align\":\"wide\",\"className\":\"{$cls}\",\"layout\":{\"type\":\"grid\",\"minimumColumnWidth\":\"15rem\"}} -->\n<div class=\"wp-block-group alignwide {$cls}\">" . implode( "\n\n", $cards ) . "</div>\n<!-- /wp:group -->";
+};
+$ueber = wp_insert_post( array( 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Über uns', 'post_name' => 'ueber-uns' ) );
+$teams = wp_insert_post( array(
+	'post_type'    => 'page',
+	'post_status'  => 'publish',
+	'post_title'   => 'Unsere Mannschaften',
+	'post_name'    => 'unsere-mannschaften',
+	'post_parent'  => $ueber,
+	'post_content' => "<!-- wp:paragraph -->\n<p>Unsere Trainingsgruppen im Überblick.</p>\n<!-- /wp:paragraph -->",
+) );
+$photo_url = wp_get_attachment_url( $imgs[1] );
+$t1 = wp_insert_post( array(
+	'post_type'    => 'page',
+	'post_status'  => 'publish',
+	'post_title'   => '1. Mannschaft',
+	'post_name'    => '1-mannschaft',
+	'post_parent'  => $teams,
+	'menu_order'   => 1,
+	'post_content' => "<!-- wp:paragraph -->\n<p>Die aktive Leistungsmannschaft.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:image {\"id\":{$imgs[1]},\"sizeSlug\":\"large\"} -->\n<figure class=\"wp-block-image size-large\"><img src=\"{$photo_url}\" alt=\"\" class=\"wp-image-{$imgs[1]}\"/></figure>\n<!-- /wp:image -->\n\n<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Trainer der 1. Mannschaft</h2>\n<!-- /wp:heading -->\n\n" . $team_grid( array( $card( $imgs[0], 'Uschi Bischer' ), $card( $imgs[2], 'Christel Mörstedt' ) ) )
+		. "\n\n<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Linksbündig</h2>\n<!-- /wp:heading -->\n\n" . $team_grid( array( $card( $imgs[0], 'Anna Links' ), $card( $imgs[2], 'Ben Links' ) ), 'is-team-left' ),
+) );
+set_post_thumbnail( $t1, $imgs[2] );
+$t2 = wp_insert_post( array(
+	'post_type'    => 'page',
+	'post_status'  => 'publish',
+	'post_title'   => 'Bambinis',
+	'post_name'    => 'bambinis',
+	'post_parent'  => $teams,
+	'menu_order'   => 2,
+	'post_content' => $team_grid( array( $card( $imgs[0], 'Clara Klein' ) ) ),
+) );
+set_post_thumbnail( $t2, $imgs[2] );
+$i1 = sgnl_team_info( get_post( $t1 ) );
+t_eq( $i1['photo'], $imgs[1], 'Mannschaftsfoto = Foto auf der Seite (nicht Porträt, nicht Beitragsbild)' );
+t_eq( array_slice( $i1['trainers'], 0, 2 ), array( 'Uschi Bischer', 'Christel Mörstedt' ), 'Trainer aus den Team-Karten' );
+$i2 = sgnl_team_info( get_post( $t2 ) );
+t_eq( $i2['photo'], $imgs[2], 'Ohne Foto auf der Seite: Beitragsbild' );
+$tt = sgnl_albums_render( $teams, 'wide', 'teams' );
+t_has( $tt, 'is-teams', 'Mannschaften-Kacheln' );
+t_has( $tt, '1. Mannschaft', 'Kachel mit Mannschaftsname' );
+t_has( $tt, 'Trainer: Uschi Bischer, Christel Mörstedt', 'Kachel nennt die Trainer' );
+t_ok( strpos( $tt, '1. Mannschaft' ) < strpos( $tt, 'Bambinis' ), 'Reihenfolge nach „Reihenfolge“ der Seiten' );
+t_has( $tt, 'wp-image-' . $imgs[1], 'Kachelbild ist das Mannschaftsfoto' );
+t_ok( sgnl_teams_page_insert(), 'Übersicht wird in „Unsere Mannschaften“ eingesetzt' );
+t_ok( ! sgnl_teams_page_insert(), 'Nur einmal eingesetzt' );
+t_has( get_post( $teams )->post_content, 'wp:sgnl/albums {"align":"wide","mode":"teams"}', 'Block im Seiteninhalt' );
+t_has( get_post( $teams )->post_content, 'Unsere Trainingsgruppen im Überblick', 'Vorhandener Text bleibt' );
+$urls[] = '/ueber-uns/unsere-mannschaften/';
+$urls[] = '/ueber-uns/unsere-mannschaften/1-mannschaft/';
+
+/* =========================================================================
  * Übernahme der alten Datenbank (SQL-Export)
  * ====================================================================== */
 t_section( 'Datenbank-Übernahme' );

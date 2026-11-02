@@ -164,3 +164,16 @@ Nach Schritt 7 (a und b) läuft alles auf sgnl.de – die Subdomain wird nicht m
   Bild „Porträt (rund)“/„Foto mit Schatten“, Button „Mit Mail-/Download-/Link-Symbol“,
   Absatz „Kennzahl (zählt hoch)“, Tabelle „Vereinstabelle“.
 - Galerien: normaler Galerie-Block – Bilder vergrößern sich automatisch beim Klicken.
+
+## Mannschaften-Übersicht und Team-Karten (ab 1.8.0 / Theme 2.1.0)
+
+- **„Unsere Mannschaften“** zeigt alle Unterseiten (1.–4. Mannschaft, Bambinis, Masters …) als Kacheln –
+  wie die Galerie-Übersicht. Der Block wird beim ersten Öffnen des Dashboards nach dem Update einmal
+  automatisch unter den vorhandenen Text gesetzt.
+- **Bild der Kachel** = das erste Foto auf der Mannschaftsseite (die runden Trainer-Porträts zählen nicht).
+  Gibt es dort kein Foto, wird das Beitragsbild genommen. Unter dem Namen stehen die Trainer aus den Team-Karten.
+- **Reihenfolge:** Seiten → Mannschaft → „Reihenfolge“ (kleinere Zahl = weiter vorne).
+- **Neue Mannschaft:** Seite anlegen, „Übergeordnete Seite“ = „Unsere Mannschaften“ – fertig.
+- **Block selbst einfügen:** „/Mannschaften-Übersicht“ (oder Galerie-Übersicht → rechts „Art: Mannschaften“).
+- **Team-Karten ausrichten:** Team-Raster anklicken → rechts **„Team-Karten → Ausrichtung“**:
+  *Mittig* (Standard) oder *Linksbündig* – dann beginnen die Karten auf einer Linie mit Text und Überschrift.

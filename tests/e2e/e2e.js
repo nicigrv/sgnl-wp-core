@@ -41,6 +41,33 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
     await ctx.close();
   }
 
+  // --- Team-Karten: mittig bzw. bündig mit der Überschrift ---
+  console.log('== Mannschaften');
+  {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+    await page.goto(BASE + '/ueber-uns/unsere-mannschaften/', { waitUntil: 'networkidle' });
+    const tiles = await page.$$eval('.sgnl-albums.is-teams .sgnl-album', els => els.map(e => e.textContent.trim()));
+    tiles.length === 2 ? ok('Übersicht zeigt 2 Mannschafts-Kacheln') : fail('Mannschafts-Kacheln: ' + tiles.length);
+    await page.goto(BASE + '/ueber-uns/unsere-mannschaften/1-mannschaft/', { waitUntil: 'networkidle' });
+    const m = await page.evaluate(() => {
+      const grids = [...document.querySelectorAll('.sgnl-team')];
+      const res = grids.map(g => {
+        const head = g.previousElementSibling;
+        const cards = [...g.children].map(c => c.getBoundingClientRect());
+        const gr = g.getBoundingClientRect();
+        const left = Math.min(...cards.map(c => c.left)), right = Math.max(...cards.map(c => c.right));
+        return { left: g.classList.contains('is-team-left'), headLeft: head.getBoundingClientRect().left, cardLeft: left,
+          gap: Math.abs((left - gr.left) - (gr.right - right)), sameRow: cards.every(c => Math.abs(c.top - cards[0].top) < 2) };
+      });
+      return res;
+    });
+    const c = m.find(x => !x.left), l = m.find(x => x.left);
+    c && c.gap < 3 && c.sameRow ? ok('Team-Karten mittig') : fail('Team-Karten nicht mittig: ' + JSON.stringify(c));
+    l && Math.abs(l.cardLeft - l.headLeft) < 3 ? ok('Team-Karten linksbündig auf einer Linie mit der Überschrift') : fail('Linksbündig verschoben: ' + JSON.stringify(l));
+    await page.screenshot({ path: path.join(SHOTS, 'mannschaft-team-karten.png'), fullPage: true });
+    await page.close();
+  }
+
   // --- Bedienung ---
   console.log('== Bedienung');
   {
