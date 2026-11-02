@@ -73,6 +73,11 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
 - In der Terminliste: Filter „Terminplan“ / „Archiv JJJJ“, A/E/P zeigt Ausschreibung/Ergebnisse/Protokoll,
   „Duplizieren“ für wiederkehrende Veranstaltungen.
 
+## Startseite: nächste Termine – ab Version 1.6.0
+- In der Kachel „Terminplan“ auf der Startseite stehen automatisch die nächsten 3 Termine
+  (wird beim Update einmalig eingesetzt; vorher gesicherter Inhalt bleibt erhalten).
+- Block „Nächste Termine“: Anzahl, Kategorien und Link „Zum Terminplan“ einstellbar – auch auf anderen Seiten nutzbar.
+
 ## Kategorien – ab Version 1.5.0
 - Termine haben Kategorien: **Wettkämpfe, Veranstaltungen, Ferien, Jugendveranstaltungen**.
   Weitere unter Termine → Kategorien anlegen (mit Farbe).
@@ -108,6 +113,17 @@ Ergebnis: eigenes Theme ohne Mesmerize, alle Inhalte als normale WordPress-Blöc
 - Ergebnisse, Bestenliste, Rekorde, Schwimmer, Meldungen kommen weiter aus sgnl.webclub.app und laden
   erst nach Zustimmung zu externen Inhalten.
 - Block „Datenbank“ (Reiter frei wählbar) und Block „Live-Wettkämpfe“ lassen sich auf jeder Seite einsetzen.
+
+### Subdomain datenbank.sgnl.de entfernen
+Nach Schritt 7 (a und b) läuft alles auf sgnl.de – die Subdomain wird nicht mehr gebraucht:
+1. **IONOS → Domains & SSL → datenbank.sgnl.de**: Ziel auf denselben Ordner wie sgnl.de setzen
+   (oder „Weiterleitung“ auf https://sgnl.de/datenbank/). Dann landen alte Links, QR-Codes und
+   Lesezeichen automatisch auf der neuen Seite – inkl. Reiter (#live) und /trainer.html.
+   Wer die Subdomain ganz löscht, nimmt in Kauf, dass alte Links ins Leere gehen.
+2. Den alten Ordner der Subdomain auf dem Webspace löschen (vorher sichern).
+3. Die alte MySQL-Datenbank der Subdomain löschen (erst nach Schritt 7a!).
+4. In Microsoft Entra (portal.azure.com) die App-Registrierung für den alten Datenbank-Login löschen.
+5. In webclub die Höhenmeldung (iframe-hoehe.html) durch die neue Version ersetzen.
 
 ## Galerien – ab Version 1.3.0
 - **Einmalig:** Werkzeuge → SG Neptun Umstellung → Schritt 6 „Galerien einrichten“.

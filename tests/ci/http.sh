@@ -21,14 +21,21 @@ done < "$DIR/urls.txt"
 echo "== Inhalte"
 curl -s "$BASE/" > /tmp/front.html
 if grep -q 'fill:var(--wp--preset--color--water)' /tmp/front.html; then ok "Welle hat die Farbe des ersten Abschnitts"; else fail "Welle nicht eingefärbt"; grep -o '<svg class="hero-wave"[^>]*>' /tmp/front.html; grep -o '<body[^>]*>' /tmp/front.html; fi
-curl -s "$BASE/terminplan/" | grep -q 'sgnl-events__filter' && ok "Terminplan mit Kategorie-Filter" || fail "Terminplan ohne Filter"
+has() { curl -s "$BASE$1" > /tmp/check.html; grep -qE "$2" /tmp/check.html; }
+has / 'sgnl-next__item' && ok "Startseite zeigt die nächsten Termine" || fail "Startseite ohne nächste Termine"
+has /terminplan/ 'sgnl-events__filter' && ok "Terminplan mit Kategorie-Filter" || fail "Terminplan ohne Filter"
 Y=$(sed -n 's#^/galerie/\([0-9]\{4\}\)/$#\1#p' "$DIR/urls.txt" | head -1)
-curl -s "$BASE/galerie/$Y/" | grep -q 'sgnl-albums' && ok "/galerie/$Y/ zeigt die Alben" || fail "/galerie/$Y/ zeigt keine Alben"
-curl -s "$BASE/galerie/$Y/dlp/" | grep -qE 'wp-lightbox-container|data-wp-interactive' && ok "Album: Bilder vergrößerbar" || fail "Album: keine Lightbox"
+has "/galerie/$Y/" 'sgnl-albums' && ok "/galerie/$Y/ zeigt die Alben" || fail "/galerie/$Y/ zeigt keine Alben"
+has "/galerie/$Y/dlp/" 'wp-lightbox-container|data-wp-interactive' && ok "Album: Bilder vergrößerbar" || fail "Album: keine Lightbox"
 read -r OLD NEW < "$DIR/redirect.txt"
 out=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "$BASE$OLD")
 case "$out" in 301*"$NEW") ok "Alte Galerie-Adresse leitet weiter ($out)";; *) fail "Weiterleitung $OLD: $out";; esac
-curl -s "$BASE/wp-json/sgnl/v1/live" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "events" in d' && ok "Live-JSON gültig" || fail "Live-JSON ungültig"
+for pair in "/ /datenbank/" "/index.html /datenbank/" "/trainer.html /datenbank/trainer/" "/admin/ post_type=sgnl_event"; do
+  set -- $pair
+  out=$(curl -s -o /dev/null -H 'Host: datenbank.example.org' -w '%{http_code} %{redirect_url}' "$BASE$1")
+  case "$out" in 301*"$2") ok "datenbank.…$1 → $2";; *) fail "Alte Subdomain $1: $out";; esac
+done
+curl -s "$BASE/wp-json/sgnl/v1/live" > /tmp/live.json && python3 -c 'import json; d=json.load(open("/tmp/live.json")); assert "events" in d' && ok "Live-JSON gültig" || fail "Live-JSON ungültig"
 ct=$(curl -s -o /tmp/terminplan.pdf -w '%{content_type}' "$BASE/?sgnl-terminplan=pdf")
 [ "$ct" = "application/pdf" ] && ok "PDF wird ausgeliefert" || fail "PDF Content-Type: $ct"
 qpdf --check /tmp/terminplan.pdf > /dev/null && ok "PDF (Website) ist gültig" || fail "PDF (Website) ungültig"

@@ -294,7 +294,7 @@ SGNL_DB_Import::run( $rows );
 t_eq( count( sgnl_event_messages( $run_id[0] ) ), 2, 'Erneutes Einlesen erzeugt keine doppelten Nachrichten' );
 
 // Seite /datenbank/ einrichten
-$post_with_link = wp_insert_post( array( 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Startseite', 'post_name' => 'startseite', 'post_content' => "<!-- wp:group {\"tagName\":\"section\",\"align\":\"full\",\"backgroundColor\":\"water\",\"layout\":{\"type\":\"constrained\"}} -->\n<section class=\"wp-block-group alignfull has-water-background-color has-background\"><!-- wp:paragraph -->\n<p><a href=\"https://datenbank.sgnl.de/index.html/#live\">Live</a></p>\n<!-- /wp:paragraph --></section>\n<!-- /wp:group -->" ) );
+$post_with_link = wp_insert_post( array( 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Startseite', 'post_name' => 'startseite', 'post_content' => "<!-- wp:group {\"tagName\":\"section\",\"align\":\"full\",\"backgroundColor\":\"water\",\"layout\":{\"type\":\"constrained\"}} -->\n<section class=\"wp-block-group alignfull has-water-background-color has-background\"><!-- wp:paragraph -->\n<p><a href=\"https://datenbank.sgnl.de/index.html/#live\">Live</a></p>\n<!-- /wp:paragraph --></section>\n<!-- /wp:group -->\n\n<!-- wp:group {\"align\":\"wide\",\"className\":\"sgnl-cards\",\"layout\":{\"type\":\"grid\",\"minimumColumnWidth\":\"18rem\"}} -->\n<div class=\"wp-block-group alignwide sgnl-cards\"><!-- wp:group {\"className\":\"is-style-sgnl-card\"} -->\n<div class=\"wp-block-group is-style-sgnl-card\"><!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">Terminplan</h3>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Alle Wettkämpfe und Termine.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:buttons -->\n<div class=\"wp-block-buttons\"><!-- wp:button -->\n<div class=\"wp-block-button\"><a class=\"wp-block-button__link wp-element-button\" href=\"/terminplan/\">Zum Terminplan</a></div>\n<!-- /wp:button --></div>\n<!-- /wp:buttons --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"is-style-sgnl-card\"} -->\n<div class=\"wp-block-group is-style-sgnl-card\"><!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">Training</h3>\n<!-- /wp:heading --></div>\n<!-- /wp:group --></div>\n<!-- /wp:group -->" ) );
 update_option( 'show_on_front', 'page' );
 update_option( 'page_on_front', $post_with_link );
 $su = SGNL_DB_Import::setup( 'trainer-test' );
@@ -311,6 +311,24 @@ t_not( $dbh, 'oeffentlich-termine-ex.php', 'Kein webclub-Terminplan' );
 t_has( $dbh, 'data-role="gate"', 'Externe Reiter erst nach Zustimmung' );
 $urls[] = '/datenbank/';
 $urls[] = '/datenbank/trainer/';
+
+/* =========================================================================
+ * Startseite: nächste Termine in der Kachel "Terminplan"
+ * ====================================================================== */
+t_section( 'Startseite: nächste Termine' );
+t_ok( sgnl_events_home_insert(), 'Block wird in die Kachel „Terminplan“ eingesetzt' );
+$home = get_post( $post_with_link )->post_content;
+t_has( $home, '<!-- wp:sgnl/next-events {"showLink":false} /-->', '… ohne doppelten Link (Kachel hat schon einen Button)' );
+t_ok( strpos( $home, 'wp:sgnl/next-events' ) < strpos( $home, 'Zum Terminplan</a>' ) && strpos( $home, 'wp:sgnl/next-events' ) > strpos( $home, 'Alle Wettkämpfe' ), '… zwischen Text und Button' );
+t_eq( substr_count( $home, 'wp:sgnl/next-events' ), 1, '… nur in der Terminplan-Kachel' );
+t_ok( ! sgnl_events_home_insert(), 'Kein zweites Einsetzen' );
+t_eq( count( parse_blocks( $home ) ), count( parse_blocks( get_post_meta( $post_with_link, '_sgnl_backup_home', true ) ) ), 'Aufbau der Startseite bleibt erhalten' );
+$next = sgnl_next_events_render( array( 'count' => 3 ) );
+t_eq( substr_count( $next, 'sgnl-next__item' ), 3, 'Genau 3 Termine' );
+$first = sgnl_events_query( 'upcoming' )[0];
+t_has( $next, esc_html( $first['title'] ), 'Beginnt mit dem nächsten Termin' );
+t_has( $next, 'Zum Terminplan', 'Link zum Terminplan' );
+t_has( $next, wp_make_link_relative( sgnl_events_plan_url() ) === '/terminplan/' ? '/terminplan/' : 'terminplan', 'Link zeigt auf die Terminplan-Seite' );
 
 /* =========================================================================
  * Live

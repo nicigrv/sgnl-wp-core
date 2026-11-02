@@ -144,3 +144,23 @@
 .sgnl-events__filter button:focus-visible { outline: 2px solid var(--ev-primary); outline-offset: 2px; }
 .sgnl-event.has-cat .sgnl-event__wd { color: rgba(255, 255, 255, .85); }
 .is-archive .sgnl-event.has-cat .sgnl-event__wd { color: var(--ev-muted); }
+
+/* Nächste Termine (Startseite) */
+.sgnl-next { text-align: left; width: 100%; margin: .4rem 0 .2rem; }
+.sgnl-next__list { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.sgnl-next__item {
+	--cat: var(--primary, #1F44B8);
+	display: flex; align-items: center; gap: .8rem; margin: 0; padding: .55rem .65rem;
+	border-radius: 12px; background: var(--water, #EEF5FA);
+}
+.sgnl-next__date {
+	flex: none; width: 3.1rem; padding: .3rem 0 .35rem; border-radius: 9px; text-align: center;
+	background: var(--cat); color: #fff; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; line-height: 1.1;
+}
+.sgnl-next__date b { display: block; font-size: 1.2rem; letter-spacing: 0; font-weight: 700; }
+.sgnl-next__text { min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.sgnl-next__text strong { color: var(--navy, #0B2A5B); font-weight: 600; font-size: .95rem; overflow-wrap: anywhere; }
+.sgnl-next__text small { color: var(--muted, #5B6B83); font-size: .8rem; margin-top: .15rem; }
+.sgnl-next__empty { color: var(--muted, #5B6B83); margin: 0; }
+.sgnl-next__more { margin: .7rem 0 0; font-weight: 600; }
+.sgnl-next__more a { text-decoration: none !important; }

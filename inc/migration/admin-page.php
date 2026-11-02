@@ -485,6 +485,7 @@ function sgnl_db_import_card() {
 		<?php endif; ?>
 
 		<h3><?php esc_html_e( 'b) Seite /datenbank/ einrichten', 'sgnl-core' ); ?></h3>
+		<p class="description"><?php esc_html_e( 'Danach wird die Subdomain datenbank.sgnl.de nicht mehr gebraucht: bei IONOS auf den Ordner der Website zeigen lassen (alte Links leiten dann automatisch hierher), alten Ordner und alte Datenbank löschen – siehe Anleitung.', 'sgnl-core' ); ?></p>
 		<?php if ( $done ) : ?>
 			<p class="ok"><?php printf( esc_html__( 'Eingerichtet: %s', 'sgnl-core' ), '<a href="' . esc_url( home_url( '/datenbank/' ) ) . '" target="_blank">/datenbank/</a>' ); ?></p>
 			<form method="post" onsubmit="return confirm('<?php echo esc_js( __( 'Datenbank-Einrichtung rückgängig machen?', 'sgnl-core' ) ); ?>');">

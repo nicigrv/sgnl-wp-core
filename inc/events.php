@@ -1519,3 +1519,190 @@ function sgnl_event_match_score( $t1, $o1, $t2, $o2 ) {
 	}
 	return 80 * $hit / min( count( $a ), count( $b ) ) + ( $same_ort ? 20 : 0 );
 }
+
+/* =========================================================================
+ * Block "Nächste Termine" (z. B. in der Terminplan-Kachel der Startseite)
+ * ====================================================================== */
+add_action( 'init', function () {
+	wp_register_script(
+		'sgnl-next-events-block',
+		SGNL_CORE_URL . 'assets/next-events-block.js',
+		array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-server-side-render' ),
+		sgnl_core_ver( 'assets/next-events-block.js' ),
+		true
+	);
+	register_block_type( 'sgnl/next-events', array(
+		'api_version'     => 3,
+		'title'           => __( 'Nächste Termine', 'sgnl-core' ),
+		'description'     => __( 'Die nächsten Termine als kurze Liste mit Link zum Terminplan – z. B. für die Startseite.', 'sgnl-core' ),
+		'category'        => 'widgets',
+		'icon'            => 'calendar',
+		'keywords'        => array( 'termine', 'terminplan', 'startseite', 'nächste' ),
+		'editor_script'   => 'sgnl-next-events-block',
+		'style'           => 'sgnl-events',
+		'supports'        => array( 'html' => false ),
+		'attributes'      => array(
+			'count'    => array( 'type' => 'number', 'default' => 3 ),
+			'cats'     => array( 'type' => 'string', 'default' => '' ),
+			'showLink' => array( 'type' => 'boolean', 'default' => true ),
+		),
+		'render_callback' => 'sgnl_next_events_render',
+	) );
+} );
+
+/**
+ * Seite mit dem Terminplan (Block "Termine" ohne Archiv).
+ *
+ * @return string URL
+ */
+function sgnl_events_plan_url() {
+	global $wpdb;
+	$id = $wpdb->get_var( "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'page' AND post_status = 'publish' AND post_content LIKE '%<!-- wp:sgnl/events %' AND post_content NOT LIKE '%\"mode\":\"archive\"%' ORDER BY ID ASC LIMIT 1" );
+	if ( ! $id ) {
+		$p  = get_page_by_path( 'terminplan' );
+		$id = $p ? $p->ID : 0;
+	}
+	return $id ? get_permalink( $id ) : home_url( '/terminplan/' );
+}
+
+/**
+ * Nächste Termine ausgeben.
+ *
+ * @param array $a Attribute.
+ * @return string
+ */
+function sgnl_next_events_render( $a ) {
+	$count  = max( 1, min( 10, (int) ( $a['count'] ?? 3 ) ) );
+	$cats   = array_filter( array_map( 'sanitize_title', explode( ',', (string) ( $a['cats'] ?? '' ) ) ) );
+	$events = array_slice( sgnl_events_query( 'upcoming', 0, $cats ), 0, $count );
+	wp_enqueue_style( 'sgnl-events' );
+
+	$h = '<div class="sgnl-next">';
+	if ( ! $events ) {
+		$h .= '<p class="sgnl-next__empty">' . esc_html__( 'Aktuell sind keine Termine eingetragen.', 'sgnl-core' ) . '</p>';
+	} else {
+		$h .= '<ul class="sgnl-next__list">';
+		foreach ( $events as $e ) {
+			list( , $m, $d ) = array_map( 'intval', explode( '-', $e['start'] ) );
+			$cat  = $e['cats'] ? $e['cats'][0] : null;
+			$meta = array_filter( array( $e['ort'], $cat ? $cat['name'] : '' ) );
+			$h   .= '<li class="sgnl-next__item"' . ( $cat ? ' style="--cat:' . esc_attr( $cat['color'] ) . '"' : '' ) . '>'
+				. '<span class="sgnl-next__date"><b>' . (int) $d . '</b>' . esc_html( sgnl_month_name( $m, true ) ) . '</span>'
+				. '<span class="sgnl-next__text"><strong>' . esc_html( $e['title'] ) . '</strong>'
+				. '<small>' . esc_html( sgnl_event_date_label( $e ) . ( $meta ? ' · ' . implode( ' · ', $meta ) : '' ) ) . '</small></span></li>';
+		}
+		$h .= '</ul>';
+	}
+	if ( ! isset( $a['showLink'] ) || $a['showLink'] ) {
+		$h .= '<p class="sgnl-next__more"><a href="' . esc_url( sgnl_events_plan_url() ) . '">' . esc_html__( 'Zum Terminplan', 'sgnl-core' ) . ' <span aria-hidden="true">→</span></a></p>';
+	}
+	return $h . '</div>';
+}
+
+/**
+ * Startseite: "Nächste Termine" in die Kachel "Terminplan" einsetzen (einmalig).
+ *
+ * @return bool Eingefügt?
+ */
+function sgnl_events_home_insert() {
+	$front = (int) get_option( 'page_on_front' );
+	$post  = $front ? get_post( $front ) : null;
+	if ( ! $post || false !== strpos( $post->post_content, 'wp:sgnl/next-events' ) ) {
+		return false;
+	}
+	$blocks = parse_blocks( $post->post_content );
+	$done   = false;
+	$walk   = function ( array &$list ) use ( &$walk, &$done ) {
+		foreach ( $list as &$b ) {
+			if ( $done ) {
+				return;
+			}
+			$is_card = 'core/group' === $b['blockName'] && false !== strpos( (string) ( $b['attrs']['className'] ?? '' ), 'is-style-sgnl-card' );
+			if ( $is_card ) {
+				$head = '';
+				foreach ( $b['innerBlocks'] as $ib ) {
+					if ( 'core/heading' === $ib['blockName'] ) {
+						$head = mb_strtolower( wp_strip_all_tags( $ib['innerHTML'] ) );
+						break;
+					}
+				}
+				if ( false !== strpos( $head, 'termin' ) ) {
+					$has_link = false !== stripos( serialize_blocks( $b['innerBlocks'] ), 'terminplan' ) && false !== strpos( serialize_blocks( $b['innerBlocks'] ), 'wp:button' );
+					$new      = array(
+						'blockName'    => 'sgnl/next-events',
+						'attrs'        => $has_link ? array( 'showLink' => false ) : array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '',
+						'innerContent' => array(),
+					);
+					// Vor die Buttons setzen (sonst ans Ende).
+					$pos = count( $b['innerBlocks'] );
+					foreach ( $b['innerBlocks'] as $i => $ib ) {
+						if ( 'core/buttons' === $ib['blockName'] ) {
+							$pos = $i;
+							break;
+						}
+					}
+					array_splice( $b['innerBlocks'], $pos, 0, array( $new ) );
+					$n = -1;
+					$c = array();
+					$placed = false;
+					foreach ( $b['innerContent'] as $chunk ) {
+						if ( null === $chunk ) {
+							$n++;
+							if ( $n === $pos && ! $placed ) {
+								$c[]    = null;
+								$c[]    = "\n\n";
+								$placed = true;
+							}
+						}
+						$c[] = $chunk;
+					}
+					if ( ! $placed ) {
+						// Ans Ende: vor dem schließenden HTML-Tag einsetzen.
+						$last = array_pop( $c );
+						$c[]  = "\n\n";
+						$c[]  = null;
+						$c[]  = $last;
+					}
+					$b['innerContent'] = $c;
+					$done              = true;
+					return;
+				}
+			}
+			if ( $b['innerBlocks'] ) {
+				$walk( $b['innerBlocks'] );
+			}
+		}
+	};
+	$walk( $blocks );
+	if ( ! $done ) {
+		return false;
+	}
+	update_post_meta( $post->ID, '_sgnl_backup_home', wp_slash( $post->post_content ) );
+	wp_update_post( wp_slash( array( 'ID' => $post->ID, 'post_content' => serialize_blocks( $blocks ) ) ) );
+	return true;
+}
+
+add_action( 'admin_init', function () {
+	if ( '1' === get_option( 'sgnl_home_next_events' ) || ! current_user_can( 'edit_pages' ) ) {
+		return;
+	}
+	update_option( 'sgnl_home_next_events', '1' );
+	if ( sgnl_events_home_insert() ) {
+		set_transient( 'sgnl_home_next_notice', 1, DAY_IN_SECONDS );
+	}
+} );
+
+add_action( 'admin_notices', function () {
+	if ( ! get_transient( 'sgnl_home_next_notice' ) || ! current_user_can( 'edit_pages' ) ) {
+		return;
+	}
+	delete_transient( 'sgnl_home_next_notice' );
+	printf(
+		'<div class="notice notice-success is-dismissible"><p>%s <a href="%s" target="_blank">%s</a></p></div>',
+		esc_html__( 'Startseite: In der Kachel „Terminplan“ stehen jetzt automatisch die nächsten 3 Termine.', 'sgnl-core' ),
+		esc_url( home_url( '/' ) ),
+		esc_html__( 'Ansehen', 'sgnl-core' )
+	);
+} );

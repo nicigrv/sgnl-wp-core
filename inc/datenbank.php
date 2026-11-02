@@ -145,3 +145,33 @@ function sgnl_db_render( $a ) {
 	$h .= '</div></div>';
 	return $h;
 }
+
+/* =========================================================================
+ * Alte Subdomain datenbank.<domain> → /datenbank/
+ * Zeigt die Subdomain (z. B. bei IONOS) auf denselben Ordner wie die Website,
+ * leitet WordPress alle alten Adressen hierher um. Der Reiter (#live …)
+ * bleibt dabei erhalten – Browser übernehmen ihn bei Weiterleitungen.
+ * ====================================================================== */
+add_action( 'init', function () {
+	$host = strtolower( preg_replace( '/:\d+$/', '', (string) ( $_SERVER['HTTP_HOST'] ?? '' ) ) );
+	$own  = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+	if ( '' === $host || $host === $own || 0 !== strpos( $host, 'datenbank.' ) ) {
+		return;
+	}
+	$path = strtolower( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH ) );
+	$db   = get_page_by_path( 'datenbank' );
+	$base = $db ? get_permalink( $db ) : home_url( '/datenbank/' );
+	if ( preg_match( '#^/trainer(\.html)?/?$#', $path ) ) {
+		$tr  = get_page_by_path( 'datenbank/trainer' );
+		$to  = $tr ? get_permalink( $tr ) : $base;
+	} elseif ( 0 === strpos( $path, '/admin' ) ) {
+		$to = admin_url( 'edit.php?post_type=sgnl_event' );
+	} elseif ( 0 === strpos( $path, '/wettkaempfe.php' ) ) {
+		$to = rest_url( 'sgnl/v1/live' );
+	} else {
+		$to = $base;
+	}
+	nocache_headers();
+	wp_redirect( $to, 301, 'SG Neptun' ); // phpcs:ignore WordPress.Security.SafeRedirect
+	exit;
+}, 0 );
