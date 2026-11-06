@@ -8,9 +8,9 @@
 .sgnl-ta__table input[type="text"], .sgnl-ta__table textarea, .sgnl-ta__table select { width: 100%; }
 .sgnl-ta__table textarea { min-height: 54px; resize: vertical; }
 .sgnl-ta__time { white-space: nowrap; width: 190px; }
-.sgnl-ta__time .sgnl-ta__hm { width: 70px; text-align: center; font-variant-numeric: tabular-nums; }
+.sgnl-ta__table .sgnl-ta__time input.sgnl-ta__hm { width: 70px; text-align: center; font-variant-numeric: tabular-nums; }
 .sgnl-ta__time > span { margin: 0 4px; }
-.sgnl-ta__time .sgnl-ta__season { display: block; width: 100%; margin-top: 6px; font-size: 12px; }
+.sgnl-ta__table .sgnl-ta__time input.sgnl-ta__season { display: block; width: 100%; margin-top: 6px; font-size: 12px; }
 .sgnl-ta__drag { width: 22px; cursor: grab; color: #8c8f94; }
 .sgnl-ta__row.is-dragging { opacity: .45; }
 .sgnl-ta__row.is-day-start td { border-top: 2px solid #1F44B8; }
