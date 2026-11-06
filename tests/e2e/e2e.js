@@ -68,6 +68,31 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
     await page.close();
   }
 
+  // --- Trainingszeiten: Filter und Ansicht ---
+  console.log('== Trainingszeiten');
+  {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+    await page.goto(BASE + '/ueber-uns/trainingszeiten/', { waitUntil: 'networkidle' });
+    const vis = sel => page.$$eval(sel, els => els.filter(e => e.offsetParent !== null).length);
+    const allDays = await vis('.sgnl-tday');
+    allDays === 6 ? ok('Wochenplan: 6 Trainingstage') : fail('Wochenplan zeigt ' + allDays + ' Tage');
+    await page.click('.sgnl-training__chip:has-text("1. Mannschaft")');
+    const s1 = await vis('.sgnl-tr'), d1 = await vis('.sgnl-tday');
+    s1 === 3 && d1 === 3 ? ok('Filter „1. Mannschaft“: 3 Einheiten an 3 Tagen') : fail(`Filter: ${s1} Einheiten, ${d1} Tage`);
+    await page.screenshot({ path: path.join(SHOTS, 'training-filter.png'), fullPage: true });
+    await page.click('.sgnl-training__views button[data-view="groups"]');
+    const g1 = await vis('.sgnl-tgroup');
+    g1 === 1 ? ok('Ansicht „Nach Gruppen“ mit Filter: 1 Gruppe') : fail('Nach Gruppen: ' + g1);
+    await page.click('.sgnl-training__chip[data-group=""]');
+    const gAll = await vis('.sgnl-tgroup');
+    gAll >= 9 ? ok('Alle Gruppen: ' + gAll + ' Karten') : fail('Alle Gruppen: ' + gAll);
+    await page.screenshot({ path: path.join(SHOTS, 'training-gruppen.png'), fullPage: true });
+    await page.reload({ waitUntil: 'networkidle' });
+    const kept = await page.getAttribute('.sgnl-training', 'data-view');
+    kept === 'groups' ? ok('Gewählte Ansicht wird gemerkt') : fail('Ansicht nicht gemerkt: ' + kept);
+    await page.close();
+  }
+
   // --- Bedienung ---
   console.log('== Bedienung');
   {
@@ -137,6 +162,25 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
         return { total, bad, title: wp.data.select('core/editor').getEditedPostAttribute('title') };
       });
       res.bad.length ? fail(`Editor „${res.title}“: ungültige Blöcke ${res.bad.join(', ')}`) : ok(`Editor „${res.title}“: ${res.total} Blöcke gültig`);
+    }
+    // Trainingszeiten bearbeiten
+    {
+      await page.goto(`${BASE}/wp-admin/edit.php?post_type=sgnl_event&page=sgnl-training`, { waitUntil: 'networkidle' });
+      const rows = await page.$$eval('#sgnl-ta-rows tr', r => r.length);
+      rows === 19 ? ok('Trainingszeiten-Tabelle: 19 Zeilen') : fail('Trainingszeiten-Tabelle: ' + rows);
+      await page.click('#sgnl-ta-add');
+      const last = page.locator('#sgnl-ta-rows tr').last();
+      await last.locator('select').selectOption('7');
+      await last.locator('input[type="time"]').first().fill('10:00');
+      await last.locator('input[type="time"]').nth(1).fill('11:00');
+      await last.locator('input[name$="[group]"]').fill('Testgruppe');
+      await last.locator('textarea').fill('Erika Muster');
+      await page.screenshot({ path: path.join(SHOTS, 'admin-trainingszeiten.png'), fullPage: true });
+      await Promise.all([page.waitForNavigation(), page.click('#sgnl-ta-form button[type="submit"]')]);
+      const saved = await page.$$eval('#sgnl-ta-rows tr', r => r.length);
+      saved === 20 ? ok('Neue Trainingszeit gespeichert') : fail('Nach dem Speichern: ' + saved + ' Zeilen');
+      await page.goto(BASE + '/ueber-uns/trainingszeiten/', { waitUntil: 'networkidle' });
+      (await page.content()).includes('Testgruppe') && (await page.content()).includes('Sonntag') ? ok('… und auf der Website sichtbar') : fail('Neue Zeit fehlt auf der Website');
     }
     // Mannschaften-Übersicht: Bildauswahl im Editor
     {

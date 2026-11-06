@@ -1,0 +1,30 @@
+.sgnl-ta__head { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-end; margin: 16px 0; }
+.sgnl-ta__head label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.sgnl-ta__head .sgnl-ta__note { flex: 1; min-width: 280px; }
+.sgnl-ta__head input[type="text"] { width: 100%; }
+.sgnl-ta__table { border-radius: 8px; }
+.sgnl-ta__table th { font-weight: 600; }
+.sgnl-ta__table td { vertical-align: top; padding: 8px 6px; }
+.sgnl-ta__table input[type="text"], .sgnl-ta__table textarea, .sgnl-ta__table select { width: 100%; }
+.sgnl-ta__table textarea { min-height: 54px; resize: vertical; }
+.sgnl-ta__time { white-space: nowrap; min-width: 230px; }
+.sgnl-ta__time input[type="time"] { width: 96px; }
+.sgnl-ta__time .sgnl-ta__season { margin-top: 6px; font-size: 12px; }
+.sgnl-ta__drag { width: 22px; cursor: grab; color: #8c8f94; }
+.sgnl-ta__row.is-dragging { opacity: .45; }
+.sgnl-ta__row.is-day-start td { border-top: 2px solid #1F44B8; }
+.sgnl-ta__actions { width: 64px; white-space: nowrap; }
+.sgnl-ta__actions .button-link { color: #50575e; padding: 4px; }
+.sgnl-ta__del:hover { color: #b32d2e !important; }
+.sgnl-ta__colors { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.sgnl-ta__colors label { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #dcdcde; border-radius: 999px; padding: 4px 12px 4px 4px; }
+.sgnl-ta__colors input[type="color"] { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.sgnl-ta__history ul { margin: 0; }
+.sgnl-ta__history li { display: flex; gap: 10px; align-items: center; }
+@media (max-width: 960px) {
+	.sgnl-ta__table thead { display: none; }
+	.sgnl-ta__table tr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px; border-bottom: 1px solid #dcdcde; }
+	.sgnl-ta__table td { padding: 0; }
+	.sgnl-ta__drag { display: none; }
+	.sgnl-ta__time, .sgnl-ta__table td:nth-child(6) { grid-column: 1 / -1; }
+}

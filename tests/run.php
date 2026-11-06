@@ -321,6 +321,56 @@ $urls[] = '/ueber-uns/unsere-mannschaften/';
 $urls[] = '/ueber-uns/unsere-mannschaften/1-mannschaft/';
 
 /* =========================================================================
+ * Trainingszeiten
+ * ====================================================================== */
+t_section( 'Trainingszeiten' );
+delete_option( SGNL_TRAINING_OPTION );
+$td = sgnl_training_get();
+t_eq( count( $td['sessions'] ), 19, 'Stand vom 15.10.2026 ist hinterlegt (19 Einheiten)' );
+t_eq( $td['valid_from'], '2026-10-19', 'Gültig ab 19.10.2026' );
+$tg = array_keys( sgnl_training_groups( $td ) );
+t_eq( array_slice( $tg, 0, 4 ), array( '1. Mannschaft', '2. Mannschaft', '3. Mannschaft', '4. Mannschaft' ), 'Gruppen: Mannschaften zuerst' );
+t_ok( in_array( 'Bambini', $tg, true ) && in_array( 'Masters', $tg, true ), 'Bambini und Masters als Gruppen' );
+$clean = sgnl_training_sanitize( array(
+	'valid_from' => '2026-11-01',
+	'sessions'   => array(
+		array( 'day' => 3, 'start' => '18.30', 'end' => '20', 'group' => 'B', 'place' => 'Halle', 'trainers' => 'Anna, Ben' ),
+		array( 'day' => 1, 'start' => '9', 'end' => '10:00', 'group' => 'A<script>', 'place' => '', 'trainers' => '' ),
+		array( 'day' => 1, 'start' => '', 'end' => '', 'group' => '', 'place' => '', 'trainers' => '' ),
+		array( 'day' => 9, 'start' => '25:00', 'end' => '', 'group' => 'C', 'place' => '', 'trainers' => "X\r\nY" ),
+	),
+	'groups'     => array( 'B' => array( 'color' => '#123456' ), 'A' => array( 'color' => 'rot' ) ),
+) );
+t_eq( count( $clean['sessions'] ), 3, 'Leere Zeilen fallen weg' );
+t_eq( $clean['sessions'][0]['start'] . '|' . $clean['sessions'][0]['group'], '09:00|A', 'Sortiert nach Tag und Uhrzeit, Zeit „9“ → 09:00, HTML entfernt' );
+t_eq( $clean['sessions'][1]['start'] . '-' . $clean['sessions'][1]['end'], '18:30-20:00', 'Zeit „18.30“ → 18:30' );
+t_eq( $clean['sessions'][1]['trainers'], "Anna\nBen", 'Übungsleiter mit Komma → eine Zeile je Name' );
+t_eq( $clean['sessions'][2]['day'] . '|' . $clean['sessions'][2]['start'], '7|', 'Ungültiger Tag/Zeit abgefangen' );
+t_eq( $clean['groups'], array( 'B' => array( 'color' => '#123456' ) ), 'Nur gültige Farben' );
+$tr = sgnl_training_render( array( 'view' => 'days', 'filter' => true ) );
+t_has( $tr, 'Gültig ab 19. Oktober 2026', 'Plan zeigt „Gültig ab“' );
+t_has( $tr, '>Montag', 'Tage als Karten' );
+t_not( $tr, '>Sonntag', 'Tage ohne Training fehlen' );
+t_has( $tr, 'sgnl-training__chip', 'Filter nach Gruppe' );
+t_has( $tr, 'Okt. – März', 'Zusatz (Saison) wird angezeigt' );
+t_has( $tr, 'href="' . get_permalink( $t1 ), 'Gruppe verlinkt auf die Mannschaftsseite' );
+t_eq( sgnl_training_group_url( 'Bambini' ), get_permalink( $t2 ), '„Bambini“ findet die Seite „Bambinis“' );
+$one = sgnl_training_render( array( 'group' => '1. Mannschaft' ) );
+t_eq( substr_count( $one, 'class="sgnl-tr"' ), 3, 'Nur eine Gruppe: 3 Einheiten der 1. Mannschaft' );
+t_not( $one, 'sgnl-training__chip', '… ohne Filter' );
+update_option( SGNL_TRAINING_OPTION, $td );
+sgnl_training_store( array_merge( $td, array( 'note' => 'In den Ferien kein Training.' ) ) );
+t_eq( count( (array) get_option( 'sgnl_training_history' ) ), 1, 'Vorheriger Stand wird aufbewahrt' );
+t_has( sgnl_training_render( array() ), 'In den Ferien kein Training.', 'Hinweis unter dem Plan' );
+wp_update_nav_menu_item( $menu, 0, array( 'menu-item-object-id' => $teams, 'menu-item-object' => 'page', 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) );
+$tp_id = sgnl_training_create_page();
+t_ok( $tp_id > 0, 'Seite „Trainingszeiten“ angelegt' );
+t_eq( (int) wp_get_post_parent_id( $tp_id ), (int) $ueber, '… unter „Über uns“' );
+t_eq( sgnl_training_create_page(), 0, '… nur einmal' );
+t_ok( in_array( $tp_id, array_map( 'intval', wp_list_pluck( wp_get_nav_menu_items( $menu ), 'object_id' ) ), true ), '… und im Menü neben „Unsere Mannschaften“' );
+$urls[] = '/ueber-uns/trainingszeiten/';
+
+/* =========================================================================
  * Übernahme der alten Datenbank (SQL-Export)
  * ====================================================================== */
 t_section( 'Datenbank-Übernahme' );
@@ -490,7 +540,7 @@ if ( function_exists( 'sgnl_first_section_color' ) ) {
  * ====================================================================== */
 $urls = array_merge( array( '/', '/terminplan/', '/archiv/archiv-' . $y2 . '/', '/wp-json/sgnl/v1/live', '/?sgnl-terminplan=pdf' ), $urls );
 file_put_contents( __DIR__ . '/ci/urls.txt', implode( "\n", $urls ) . "\n" );
-$ids = array( $tp_page, $archiv_page, $root->ID, $yp->ID, $dlp->ID, $db->ID, $post_with_link, $teams );
+$ids = array( $tp_page, $archiv_page, $root->ID, $yp->ID, $dlp->ID, $db->ID, $post_with_link, $tp_id, $teams );
 file_put_contents( __DIR__ . '/ci/editor-ids.txt', implode( ' ', $ids ) . "\n" );
 
 $t = $GLOBALS['sgnl_t'];

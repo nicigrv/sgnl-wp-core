@@ -181,3 +181,18 @@ Nach Schritt 7 (a und b) läuft alles auf sgnl.de – die Subdomain wird nicht m
 - **Block selbst einfügen:** „/Mannschaften-Übersicht“ (oder Galerie-Übersicht → rechts „Art: Mannschaften“).
 - **Team-Karten ausrichten:** Team-Raster anklicken → rechts **„Team-Karten → Ausrichtung“**:
   *Mittig* (Standard) oder *Linksbündig* – dann beginnen die Karten auf einer Linie mit Text und Überschrift.
+
+## Trainingszeiten (ab 1.9.0)
+
+- **Seite:** Nach dem Update wird einmalig die Seite **„Über uns → Trainingszeiten“** angelegt (Stand vom
+  15.10.2026, gültig ab 19.10.2026) und im Menü neben „Unsere Mannschaften“ eingetragen.
+- **Ändern:** Dashboard → **Termine → Trainingszeiten**. Jede Zeile = eine Trainingseinheit (Tag, Zeit, Zusatz
+  wie „Okt. – März“, Gruppe, Ort, Übungsleiter – ein Name pro Zeile). „Trainingszeit hinzufügen“, Zeile duplizieren
+  oder löschen, oben „Gültig ab“ und ein optionaler Hinweis. **Speichern** – die Website ist sofort aktuell.
+  Darf jeder mit Termin-Rechten (auch die Rolle „Terminverwaltung“).
+- **Farben:** Jede Gruppe bekommt automatisch eine Farbe; unten auf der Seite änderbar.
+- **Frühere Stände:** Die letzten 10 Stände werden aufbewahrt und lassen sich mit einem Klick wiederherstellen.
+- **Auf der Website:** Karten je Tag (der heutige Tag ist markiert) oder „Nach Gruppen“; oben lässt sich eine
+  Gruppe wählen – die Auswahl merkt sich der Browser. Gruppen mit gleichnamiger Mannschaftsseite sind verlinkt.
+- **Block „Trainingszeiten“** lässt sich auch auf anderen Seiten einfügen – z. B. auf der Seite der 1. Mannschaft
+  mit „Nur eine Gruppe zeigen: 1. Mannschaft“.

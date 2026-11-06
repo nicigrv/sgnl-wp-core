@@ -1,0 +1,135 @@
+/* SG Neptun – Trainingszeiten (Wochenplan) */
+.sgnl-training {
+	--tr-navy: var(--navy, #0B2A5B);
+	--tr-primary: var(--primary, #1F44B8);
+	--tr-water: var(--water, #EEF5FA);
+	--tr-line: var(--line, #DCE6F0);
+	--tr-muted: var(--muted, #5B6B83);
+	--tr-radius: var(--radius, 18px);
+	--tr-gap: clamp(1rem, 2vw, 1.5rem);
+	margin-block: 1rem 2.5rem;
+}
+.sgnl-training [hidden] { display: none !important; }
+
+/* Kopfzeile */
+.sgnl-training__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem; margin-bottom: 1rem; }
+.sgnl-training__valid {
+	display: inline-flex; align-items: center; gap: .45rem; padding: .45rem .9rem; border-radius: 999px;
+	background: var(--tr-water); color: var(--tr-navy); font-weight: 600; font-size: .92rem;
+}
+.sgnl-training__valid svg { color: var(--tr-primary); }
+.sgnl-training__views { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: #fff; border: 1px solid var(--tr-line); }
+.sgnl-training__views button {
+	font: inherit; font-size: .92rem; font-weight: 500; border: 0; background: transparent; color: var(--tr-navy);
+	padding: .45rem 1rem; border-radius: 999px; cursor: pointer; transition: background-color .15s, color .15s;
+}
+.sgnl-training__views button:hover { background: var(--tr-water); }
+.sgnl-training__views button[aria-selected="true"] { background: var(--tr-navy); color: #fff; }
+
+/* Filter */
+.sgnl-training__chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: var(--tr-gap); }
+.sgnl-training__chip {
+	display: inline-flex; align-items: center; gap: .45rem; font: inherit; font-size: .9rem; font-weight: 500;
+	padding: .42rem .9rem; border-radius: 999px; border: 1.5px solid var(--tr-line); background: #fff; color: var(--tr-navy);
+	cursor: pointer; transition: border-color .15s, background-color .15s, color .15s;
+}
+.sgnl-training__chip i { width: .7rem; height: .7rem; border-radius: 50%; background: var(--g); flex: none; }
+.sgnl-training__chip:hover { border-color: var(--g, var(--tr-primary)); }
+.sgnl-training__chip.is-active { background: var(--g, var(--tr-navy)); border-color: var(--g, var(--tr-navy)); color: #fff; }
+.sgnl-training__chip.is-active i { background: #fff; }
+
+/* Nach Tagen */
+.sgnl-training__days {
+	display: grid; gap: var(--tr-gap);
+	grid-template-columns: repeat(auto-fill, minmax(max(17rem, calc((100% - 2 * var(--tr-gap)) / 3)), 1fr));
+	align-items: start;
+}
+.sgnl-tday {
+	position: relative; background: #fff; border: 1px solid var(--tr-line); border-radius: var(--tr-radius);
+	box-shadow: 0 1px 2px rgba(7,29,64,.06), 0 8px 24px rgba(7,29,64,.06); overflow: hidden;
+}
+.sgnl-tday__name {
+	margin: 0 !important; padding: 1rem 1.25rem .85rem; font-size: 1.15rem !important; color: #fff !important;
+	background: var(--tr-navy); display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+	letter-spacing: .01em; position: relative;
+}
+.sgnl-tday__name::after {
+	content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px;
+	background: linear-gradient(90deg, #D7263D 0 20%, var(--tr-primary) 20% 30%, #8FC9EC 30% 40%, var(--tr-primary) 40% 50%, #8FC9EC 50% 60%, var(--tr-primary) 60% 70%, #8FC9EC 70% 80%, #D7263D 80%);
+	-webkit-mask-image: repeating-linear-gradient(90deg, #000 0 8.2%, transparent 8.2% 10%);
+	mask-image: repeating-linear-gradient(90deg, #000 0 8.2%, transparent 8.2% 10%);
+}
+.sgnl-tday.is-today { border-color: var(--tr-primary); box-shadow: 0 0 0 3px rgba(31,68,184,.15), 0 12px 30px rgba(7,29,64,.1); }
+.sgnl-tday__today { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; background: #D7263D; color: #fff; padding: .2rem .6rem; border-radius: 999px; }
+.sgnl-tday__list { list-style: none; margin: 0; padding: .55rem 0 .35rem; }
+.sgnl-tday__list:empty { display: none; }
+
+.sgnl-tr { position: relative; display: grid; grid-template-columns: 4.1rem 1fr; gap: .9rem; padding: .8rem 1.25rem .8rem 1.4rem; margin: 0; }
+.sgnl-tr + .sgnl-tr { border-top: 1px solid #EDF2F7; }
+.sgnl-tr::before { content: ""; position: absolute; left: 0; top: .7rem; bottom: .7rem; width: 4px; border-radius: 0 4px 4px 0; background: var(--g); }
+.sgnl-tr__time { display: flex; flex-direction: column; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.sgnl-tr__time strong { font-size: 1.12rem; color: var(--tr-navy); font-weight: 700; }
+.sgnl-tr__time span { font-size: .88rem; color: var(--tr-muted); }
+.sgnl-tr__time span::before { content: "bis "; }
+.sgnl-tr__body { min-width: 0; }
+.sgnl-tr__group { font-weight: 700; color: var(--g); font-size: 1.02rem; line-height: 1.3; margin-bottom: .2rem; }
+.sgnl-tr__group a { color: inherit; text-decoration: none; }
+.sgnl-tr__group a:hover { text-decoration: underline; text-underline-offset: .15em; }
+.sgnl-tr__season {
+	display: inline-block; font-size: .74rem; font-weight: 600; color: var(--tr-navy); background: var(--tr-water);
+	padding: .1rem .55rem; border-radius: 999px; margin: 0 0 .3rem;
+}
+.sgnl-tr__meta { display: flex; align-items: flex-start; gap: .4rem; font-size: .88rem; color: var(--tr-muted); line-height: 1.45; margin-top: .15rem; }
+.sgnl-tr__meta svg { flex: none; margin-top: .18rem; color: var(--g); opacity: .85; }
+
+/* Gefiltert: andere Einheiten ausblenden */
+.sgnl-training[data-filter] .sgnl-tr:not([data-group-match]) { display: none; }
+.sgnl-training[data-filter] .sgnl-tday:not(:has([data-group-match])) { display: none; }
+.sgnl-training[data-filter] .sgnl-tgroup:not([data-group-match]) { display: none; }
+
+/* Nach Gruppen */
+.sgnl-training__groups {
+	display: grid; gap: var(--tr-gap);
+	grid-template-columns: repeat(auto-fill, minmax(max(17rem, calc((100% - 2 * var(--tr-gap)) / 3)), 1fr));
+	align-items: start;
+}
+.sgnl-tgroup {
+	position: relative; background: #fff; border: 1px solid var(--tr-line); border-radius: var(--tr-radius);
+	box-shadow: 0 1px 2px rgba(7,29,64,.06), 0 8px 24px rgba(7,29,64,.06); overflow: hidden; padding: 0 0 .9rem;
+}
+.sgnl-tgroup__name {
+	margin: 0 0 .4rem !important; padding: 1rem 1.25rem .9rem; font-size: 1.15rem !important; color: #fff !important; background: var(--g);
+}
+.sgnl-tgroup__name a { color: #fff !important; text-decoration: none; }
+.sgnl-tgroup__name a::after { content: " →"; opacity: .8; }
+.sgnl-tgroup__list { list-style: none; margin: 0; padding: 0 1.25rem; }
+.sgnl-tgroup__list li { display: flex; gap: .8rem; align-items: flex-start; padding: .6rem 0; margin: 0; }
+.sgnl-tgroup__list li + li { border-top: 1px solid #EDF2F7; }
+.sgnl-tgroup__day {
+	flex: none; width: 2.4rem; height: 2.4rem; border-radius: 12px; display: grid; place-items: center;
+	font-weight: 700; font-size: .9rem; color: var(--g); background: color-mix(in srgb, var(--g) 12%, #fff);
+}
+.sgnl-tgroup__when { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
+.sgnl-tgroup__when strong { color: var(--tr-navy); font-variant-numeric: tabular-nums; }
+.sgnl-tgroup__when small { color: var(--tr-muted); font-size: .85rem; }
+.sgnl-tgroup__when .sgnl-tr__season { margin: .15rem 0; align-self: flex-start; }
+.sgnl-tgroup__trainers { margin: .5rem 1.25rem 0 !important; padding-top: .7rem; border-top: 1px dashed var(--tr-line); font-size: .88rem; color: var(--tr-muted); }
+.sgnl-tgroup__trainers span { display: block; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--tr-navy); margin-bottom: .15rem; }
+
+.sgnl-training__note { margin-top: var(--tr-gap) !important; color: var(--tr-muted); font-size: .95rem; }
+.sgnl-training__empty { color: var(--tr-muted); }
+
+/* Einzelne Gruppe (z. B. auf der Mannschaftsseite) */
+.sgnl-training.is-single .sgnl-training__days { grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); }
+
+@media (max-width: 600px) {
+	.sgnl-training__days, .sgnl-training__groups { grid-template-columns: 1fr; }
+	.sgnl-training__bar { flex-direction: column; align-items: flex-start; }
+	.sgnl-training__chips { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(-1 * var(--gutter, 16px)); padding: 2px var(--gutter, 16px) 6px; scrollbar-width: none; }
+	.sgnl-training__chips::-webkit-scrollbar { display: none; }
+	.sgnl-training__chip { white-space: nowrap; flex: none; }
+}
+@media print {
+	.sgnl-training__chips, .sgnl-training__views { display: none !important; }
+	.sgnl-tday, .sgnl-tgroup { box-shadow: none; break-inside: avoid; }
+}
