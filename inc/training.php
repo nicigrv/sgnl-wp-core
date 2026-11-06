@@ -19,7 +19,7 @@ function sgnl_training_days() {
 
 /** Farben für Gruppen (Vereinsfarben + gut unterscheidbare Ergänzungen) */
 function sgnl_training_palette() {
-	return array( '#1F44B8', '#D7263D', '#0B86B5', '#13895B', '#E0A100', '#6B4FBB', '#E46A1E', '#0F8A84', '#C2185B', '#0B2A5B', '#5B6B83', '#8A6D3B' );
+	return array( '#1F44B8', '#D7263D', '#0B86B5', '#13895B', '#B7791F', '#6B4FBB', '#E46A1E', '#0F8A84', '#C2185B', '#0B2A5B', '#5B6B83', '#8A6D3B' );
 }
 
 /**
@@ -427,8 +427,8 @@ function sgnl_training_admin_page() {
 					<option value="<?php echo (int) $n; ?>"<?php selected( (int) ( $s['day'] ?? 1 ), $n ); ?>><?php echo esc_html( $l ); ?></option>
 				<?php endforeach; ?>
 			</select></td>
-			<td class="sgnl-ta__time"><input type="time" name="sgnl_training[sessions][<?php echo esc_attr( $i ); ?>][start]" value="<?php echo esc_attr( $s['start'] ?? '' ); ?>" aria-label="<?php esc_attr_e( 'Beginn', 'sgnl-core' ); ?>">
-				<span>–</span><input type="time" name="sgnl_training[sessions][<?php echo esc_attr( $i ); ?>][end]" value="<?php echo esc_attr( $s['end'] ?? '' ); ?>" aria-label="<?php esc_attr_e( 'Ende', 'sgnl-core' ); ?>">
+			<td class="sgnl-ta__time"><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?" placeholder="16:00" maxlength="5" class="sgnl-ta__hm" name="sgnl_training[sessions][<?php echo esc_attr( $i ); ?>][start]" value="<?php echo esc_attr( $s['start'] ?? '' ); ?>" aria-label="<?php esc_attr_e( 'Beginn', 'sgnl-core' ); ?>">
+				<span>–</span><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?" placeholder="17:00" maxlength="5" class="sgnl-ta__hm" name="sgnl_training[sessions][<?php echo esc_attr( $i ); ?>][end]" value="<?php echo esc_attr( $s['end'] ?? '' ); ?>" aria-label="<?php esc_attr_e( 'Ende', 'sgnl-core' ); ?>">
 				<input type="text" class="sgnl-ta__season" name="sgnl_training[sessions][<?php echo esc_attr( $i ); ?>][season]" value="<?php echo esc_attr( $s['season'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Zusatz, z. B. Okt. – März', 'sgnl-core' ); ?>"></td>
 			<td><input type="text" list="sgnl-ta-groups" name="sgnl_training[sessions][<?php echo esc_attr( $i ); ?>][group]" value="<?php echo esc_attr( $s['group'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'z. B. 1. Mannschaft', 'sgnl-core' ); ?>" aria-label="<?php esc_attr_e( 'Gruppe', 'sgnl-core' ); ?>"></td>
 			<td><input type="text" list="sgnl-ta-places" name="sgnl_training[sessions][<?php echo esc_attr( $i ); ?>][place]" value="<?php echo esc_attr( $s['place'] ?? '' ); ?>" aria-label="<?php esc_attr_e( 'Ort', 'sgnl-core' ); ?>"></td>
