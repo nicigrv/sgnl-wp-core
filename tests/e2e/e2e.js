@@ -203,6 +203,25 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
     await page.screenshot({ path: path.join(SHOTS, 'admin-termin-neu.png'), fullPage: true });
     await page.goto(`${BASE}/wp-admin/edit.php?post_type=sgnl_event`, { waitUntil: 'networkidle' });
     await page.screenshot({ path: path.join(SHOTS, 'admin-termine.png'), fullPage: true });
+    // Ankündigungen
+    await page.goto(`${BASE}/wp-admin/edit.php?post_type=sgnl_announce`, { waitUntil: 'networkidle' });
+    (await page.locator('text=wird gezeigt').count()) >= 2 ? ok('Ankündigungen: Liste zeigt „wird gezeigt“') : fail('Ankündigungen: Liste');
+    await page.screenshot({ path: path.join(SHOTS, 'admin-ankuendigungen.png'), fullPage: true });
+    await page.goto(`${BASE}/wp-admin/edit.php?post_type=sgnl_announce&page=sgnl-announcements`, { waitUntil: 'networkidle' });
+    await page.screenshot({ path: path.join(SHOTS, 'admin-ankuendigungen-einstellungen.png'), fullPage: true });
+    // Startseite: Ankündigungen stehen direkt über den News
+    await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+    const order = await page.evaluate(() => {
+      const a = document.getElementById('ankuendigungen'), n = document.getElementById('news');
+      return a && n ? a.getBoundingClientRect().top < n.getBoundingClientRect().top && a.nextElementSibling === n : null;
+    });
+    order ? ok('Startseite: Ankündigungen direkt über den News') : fail('Startseite: Ankündigungen nicht direkt über den News (' + order + ')');
+    const sec = page.locator('#ankuendigungen');
+    if (await sec.count()) { await sec.screenshot({ path: path.join(SHOTS, 'ankuendigungen-desktop.png') }); }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+    if (await sec.count()) { await sec.screenshot({ path: path.join(SHOTS, 'ankuendigungen-handy.png') }); }
+    await page.setViewportSize({ width: 1400, height: 900 });
     await page.close();
   }
 

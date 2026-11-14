@@ -520,6 +520,46 @@ t_ok( $in_menu, '… und im Menü' );
 t_eq( sgnl_events_maybe_create_archive_pages(), array(), 'Keine doppelte Archivseite' );
 
 /* =========================================================================
+ * Offizielle Ankündigungen
+ * ====================================================================== */
+t_section( 'Offizielle Ankündigungen' );
+// Startseite bekommt einen News-Abschnitt (wie auf sgnl.de).
+wp_update_post( wp_slash( array(
+	'ID'           => $post_with_link,
+	'post_content' => get_post( $post_with_link )->post_content . "\n\n<!-- wp:group {\"tagName\":\"section\",\"align\":\"full\",\"anchor\":\"news\",\"layout\":{\"type\":\"constrained\"}} -->\n<section class=\"wp-block-group alignfull\" id=\"news\"><!-- wp:heading {\"textAlign\":\"center\",\"className\":\"is-style-sgnl-lane\"} -->\n<h2 class=\"wp-block-heading has-text-align-center is-style-sgnl-lane\">News</h2>\n<!-- /wp:heading -->\n\n<!-- wp:query {\"queryId\":1,\"query\":{\"perPage\":3,\"pages\":0,\"offset\":0,\"postType\":\"post\",\"order\":\"desc\",\"orderBy\":\"date\",\"inherit\":false},\"align\":\"wide\",\"className\":\"sgnl-news\"} -->\n<div class=\"wp-block-query alignwide sgnl-news\"><!-- wp:post-template {\"layout\":{\"type\":\"grid\",\"columnCount\":3}} -->\n<!-- wp:post-title {\"level\":3,\"isLink\":true} /-->\n<!-- /wp:post-template --></div>\n<!-- /wp:query --></section>\n<!-- /wp:group -->",
+) ) );
+update_option( 'sgnl_announcements_setup', '1' ); // Kein zweites Anlegen beim ersten Aufruf des Dashboards.
+sgnl_ann_seed();
+$anns = get_posts( array( 'post_type' => 'sgnl_announce', 'numberposts' => -1, 'orderby' => 'menu_order', 'order' => 'ASC' ) );
+t_eq( count( $anns ), 2, 'Weihnachtsfeier und außerordentliche Mitgliederversammlung angelegt' );
+t_eq( count( sgnl_ann_items( '2026-11-20' ) ), 2, 'Beide werden vor dem Termin gezeigt' );
+t_eq( count( sgnl_ann_items( '2026-12-05' ) ), 2, 'Am Tag des Termins noch sichtbar' );
+t_eq( count( sgnl_ann_items( '2026-12-06' ) ), 0, 'Nach dem Termin automatisch ausgeblendet' );
+$ah = sgnl_ann_render();
+if ( wp_date( 'Y-m-d' ) <= '2026-12-05' ) {
+	t_has( $ah, '>Offizielle Ankündigungen</h2>', 'Überschrift des Bereichs' );
+	t_eq( substr_count( $ah, '<article class="sgnl-ann__card">' ), 2, 'Zwei Karten' );
+	t_has( $ah, '15:00 Uhr', 'Uhrzeit mit „Uhr“' );
+	t_has( $ah, 'Mensa der Alfred-Delp-Schule', 'Ort' );
+	t_has( $ah, 'href="https://sgnl-portal.de/event.php?id=20"', 'Button zur Anmeldung' );
+	t_has( $ah, 'sgnl-ann__pdf', 'PDF-Einladung gekennzeichnet' );
+	t_has( $ah, 'Alle Infos', 'Link zur ganzen Ankündigung (Tagesordnung)' );
+	t_ok( strpos( $ah, 'Weihnachtsfeier' ) < strpos( $ah, 'Mitgliederversammlung</h3>' ), 'Reihenfolge wie eingestellt' );
+	update_post_meta( $anns[1]->ID, '_sgnl_ann_active', '0' );
+	t_has( sgnl_ann_render(), 'is-count-1', 'Einzeln ausschaltbar' );
+	update_post_meta( $anns[1]->ID, '_sgnl_ann_active', '1' );
+	update_option( 'sgnl_announcements', array( 'enabled' => '0', 'title' => 'Offizielle Ankündigungen', 'intro' => '' ) );
+	t_eq( sgnl_ann_render(), '', 'Bereich ganz ausschaltbar' );
+	update_option( 'sgnl_announcements', array( 'enabled' => '1', 'title' => 'Offizielle Ankündigungen', 'intro' => '' ) );
+}
+t_ok( sgnl_ann_insert_front(), 'Block auf der Startseite eingefügt' );
+$fc = get_post( $post_with_link )->post_content;
+t_ok( strpos( $fc, '<!-- wp:sgnl/announcements /-->' ) < strpos( $fc, 'id="news"' ) && false !== strpos( $fc, '<!-- wp:sgnl/announcements /-->' ), 'Direkt über den News' );
+t_eq( parse_blocks( $fc )[0]['attrs']['backgroundColor'] ?? '', 'water', 'Erster Abschnitt bleibt unverändert' );
+t_ok( ! sgnl_ann_insert_front(), 'Kein zweites Einfügen' );
+$urls[] = wp_make_link_relative( get_permalink( $anns[1] ) );
+
+/* =========================================================================
  * Theme
  * ====================================================================== */
 t_section( 'Theme' );
@@ -540,7 +580,7 @@ if ( function_exists( 'sgnl_first_section_color' ) ) {
  * ====================================================================== */
 $urls = array_merge( array( '/', '/terminplan/', '/archiv/archiv-' . $y2 . '/', '/wp-json/sgnl/v1/live', '/?sgnl-terminplan=pdf' ), $urls );
 file_put_contents( __DIR__ . '/ci/urls.txt', implode( "\n", $urls ) . "\n" );
-$ids = array( $tp_page, $archiv_page, $root->ID, $yp->ID, $dlp->ID, $db->ID, $post_with_link, $tp_id, $teams );
+$ids = array( $tp_page, $archiv_page, $root->ID, $yp->ID, $dlp->ID, $db->ID, $post_with_link, $tp_id, $teams, $anns[1]->ID );
 file_put_contents( __DIR__ . '/ci/editor-ids.txt', implode( ' ', $ids ) . "\n" );
 
 $t = $GLOBALS['sgnl_t'];
