@@ -5,7 +5,7 @@
  * - Dashboard → Ankündigungen: je Ankündigung Titel, Text, Art („Einladung“), Datum, Uhrzeit, Ort,
  *   bis zu zwei Buttons und der Schalter „Auf der Startseite zeigen“ (optional „bis“).
  * - Block „Offizielle Ankündigungen“ zeigt alle eingeschalteten Ankündigungen als Abschnitt.
- *   Er wird einmalig auf der Startseite direkt über den News eingefügt.
+ *   Er wird einmalig auf der Startseite direkt unter den News eingefügt.
  * - Der ganze Bereich lässt sich unter Ankündigungen → Einstellungen ein- und ausschalten.
  *   Ohne eingeschaltete Ankündigung erscheint er nicht.
  *
@@ -420,7 +420,7 @@ function sgnl_ann_settings_page() {
 	}
 	if ( isset( $_POST['sgnl_ann_insert'] ) && check_admin_referer( 'sgnl_ann_settings' ) ) {
 		$done = sgnl_ann_insert_front();
-		echo '<div class="notice notice-' . ( $done ? 'success' : 'info' ) . '"><p>' . esc_html( $done ? __( 'Der Bereich steht jetzt auf der Startseite über den News.', 'sgnl-core' ) : __( 'Der Bereich ist schon auf der Startseite (oder es gibt keine statische Startseite).', 'sgnl-core' ) ) . '</p></div>';
+		echo '<div class="notice notice-' . ( $done ? 'success' : 'info' ) . '"><p>' . esc_html( $done ? __( 'Der Bereich steht jetzt auf der Startseite unter den News.', 'sgnl-core' ) : __( 'Der Bereich ist schon auf der Startseite (oder es gibt keine statische Startseite).', 'sgnl-core' ) ) . '</p></div>';
 	}
 	$s      = sgnl_ann_settings();
 	$front  = (int) get_option( 'page_on_front' );
@@ -443,20 +443,41 @@ function sgnl_ann_settings_page() {
 		<?php if ( $placed ) : ?>
 			<p><?php esc_html_e( 'Der Block „Offizielle Ankündigungen“ steht auf der Startseite. Verschieben oder entfernen lässt er sich im Editor der Startseite.', 'sgnl-core' ); ?> <a href="<?php echo esc_url( get_edit_post_link( $front ) ); ?>"><?php esc_html_e( 'Startseite bearbeiten', 'sgnl-core' ); ?></a></p>
 		<?php else : ?>
-			<form method="post"><?php wp_nonce_field( 'sgnl_ann_settings' ); ?><p><?php esc_html_e( 'Der Block steht nicht auf der Startseite.', 'sgnl-core' ); ?></p><?php submit_button( __( 'Über den News einfügen', 'sgnl-core' ), 'secondary', 'sgnl_ann_insert', false ); ?></form>
+			<form method="post"><?php wp_nonce_field( 'sgnl_ann_settings' ); ?><p><?php esc_html_e( 'Der Block steht nicht auf der Startseite.', 'sgnl-core' ); ?></p><?php submit_button( __( 'Unter den News einfügen', 'sgnl-core' ), 'secondary', 'sgnl_ann_insert', false ); ?></form>
 		<?php endif; ?>
 	</div>
 	<?php
 }
 
 /* =========================================================================
- * Einbau auf der Startseite (einmalig, direkt über den News)
+ * Einbau auf der Startseite (einmalig, direkt unter den News)
  * ====================================================================== */
 
 /**
- * Block auf der Startseite über dem Abschnitt mit den News einfügen.
+ * Index des News-Abschnitts in den Blöcken der Startseite.
  *
- * @return bool Eingefügt?
+ * @param array $blocks Blöcke.
+ * @return int|null
+ */
+function sgnl_ann_news_index( array $blocks ) {
+	foreach ( $blocks as $i => $b ) {
+		if ( empty( $b['blockName'] ) || 'sgnl/announcements' === $b['blockName'] ) {
+			continue;
+		}
+		$ser = serialize_block( $b );
+		if ( false !== strpos( $ser, 'sgnl-news' ) || false !== strpos( $ser, '<!-- wp:query' ) || 'news' === ( $b['attrs']['anchor'] ?? '' ) || false !== strpos( $ser, 'id="news"' ) ) {
+			return $i;
+		}
+	}
+	return null;
+}
+
+/**
+ * Block auf der Startseite direkt unter den News platzieren.
+ * Steht er schon auf der Seite, wird er nur verschoben, wenn er noch über den News steht
+ * (so wie ihn Version 1.10.0 eingefügt hat). Von Hand an eine andere Stelle gesetzt, bleibt er dort.
+ *
+ * @return bool Geändert?
  */
 function sgnl_ann_insert_front() {
 	$front = (int) get_option( 'page_on_front' );
@@ -464,20 +485,26 @@ function sgnl_ann_insert_front() {
 		return false;
 	}
 	$content = (string) get_post_field( 'post_content', $front );
-	if ( false !== strpos( $content, 'wp:sgnl/announcements' ) || ! has_blocks( $content ) ) {
+	if ( ! has_blocks( $content ) ) {
 		return false;
 	}
 	$blocks = parse_blocks( $content );
-	$at     = null;
+	$news   = sgnl_ann_news_index( $blocks );
+	$have   = null;
 	foreach ( $blocks as $i => $b ) {
-		if ( empty( $b['blockName'] ) ) {
-			continue;
-		}
-		$ser = serialize_block( $b );
-		if ( false !== strpos( $ser, 'sgnl-news' ) || false !== strpos( $ser, '<!-- wp:query' ) || 'news' === ( $b['attrs']['anchor'] ?? '' ) || false !== strpos( $ser, 'id="news"' ) ) {
-			$at = $i;
+		if ( 'sgnl/announcements' === $b['blockName'] ) {
+			$have = $i;
 			break;
 		}
+	}
+	if ( null !== $have ) {
+		if ( null === $news || $have > $news ) {
+			return false; // Steht schon unter den News oder an einer selbst gewählten Stelle.
+		}
+		// Aus der alten Position nehmen (samt Leerzeile danach).
+		$len = isset( $blocks[ $have + 1 ] ) && empty( $blocks[ $have + 1 ]['blockName'] ) && '' === trim( $blocks[ $have + 1 ]['innerHTML'] ) ? 2 : 1;
+		array_splice( $blocks, $have, $len );
+		$news = sgnl_ann_news_index( $blocks );
 	}
 	$new = array(
 		'blockName'    => 'sgnl/announcements',
@@ -487,10 +514,11 @@ function sgnl_ann_insert_front() {
 		'innerContent' => array(),
 	);
 	$sep = array( 'blockName' => null, 'attrs' => array(), 'innerBlocks' => array(), 'innerHTML' => "\n\n", 'innerContent' => array( "\n\n" ) );
-	if ( null === $at ) {
-		$at = 0;
+	if ( null === $news ) {
+		array_splice( $blocks, 0, 0, array( $new, $sep ) );
+	} else {
+		array_splice( $blocks, $news + 1, 0, array( $sep, $new ) );
 	}
-	array_splice( $blocks, $at, 0, array( $new, $sep ) );
 	wp_update_post( wp_slash( array( 'ID' => $front, 'post_content' => serialize_blocks( $blocks ) ) ) );
 	return true;
 }
@@ -546,8 +574,18 @@ add_action( 'admin_init', function () {
 	if ( sgnl_ann_insert_front() ) {
 		set_transient( 'sgnl_ann_notice', 1, DAY_IN_SECONDS );
 	}
+	update_option( 'sgnl_announcements_pos', 'unter-news' );
 	flush_rewrite_rules( false );
 } );
+
+/* Ab 1.10.1 stehen die Ankündigungen unter den News: einmalig verschieben */
+add_action( 'admin_init', function () {
+	if ( 'unter-news' === get_option( 'sgnl_announcements_pos' ) || ! current_user_can( 'edit_pages' ) ) {
+		return;
+	}
+	update_option( 'sgnl_announcements_pos', 'unter-news' );
+	sgnl_ann_insert_front();
+}, 20 );
 
 add_action( 'admin_notices', function () {
 	if ( ! get_transient( 'sgnl_ann_notice' ) || ! current_user_can( 'edit_pages' ) ) {
@@ -556,7 +594,7 @@ add_action( 'admin_notices', function () {
 	delete_transient( 'sgnl_ann_notice' );
 	printf(
 		'<div class="notice notice-success is-dismissible"><p>%s <a href="%s">%s</a> · <a href="%s" target="_blank">%s</a></p></div>',
-		esc_html__( 'Neu: „Offizielle Ankündigungen“ stehen auf der Startseite direkt über den News.', 'sgnl-core' ),
+		esc_html__( 'Neu: „Offizielle Ankündigungen“ stehen auf der Startseite direkt unter den News.', 'sgnl-core' ),
 		esc_url( admin_url( 'edit.php?post_type=sgnl_announce' ) ),
 		esc_html__( 'Ankündigungen verwalten', 'sgnl-core' ),
 		esc_url( home_url( '/#ankuendigungen' ) ),

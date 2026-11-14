@@ -552,9 +552,19 @@ if ( wp_date( 'Y-m-d' ) <= '2026-12-05' ) {
 	t_eq( sgnl_ann_render(), '', 'Bereich ganz ausschaltbar' );
 	update_option( 'sgnl_announcements', array( 'enabled' => '1', 'title' => 'Offizielle Ankündigungen', 'intro' => '' ) );
 }
+$before = get_post( $post_with_link )->post_content;
+// Stand von 1.10.0: Block steht über den News → wird unter die News verschoben.
+$news_pos = strpos( $before, '<!-- wp:group {"tagName":"section","align":"full","anchor":"news"' );
+wp_update_post( wp_slash( array( 'ID' => $post_with_link, 'post_content' => substr( $before, 0, $news_pos ) . "<!-- wp:sgnl/announcements /-->\n\n" . substr( $before, $news_pos ) ) ) );
+t_ok( sgnl_ann_insert_front(), 'Block von über den News verschoben' );
+$fc = get_post( $post_with_link )->post_content;
+t_eq( substr_count( $fc, 'wp:sgnl/announcements' ), 1, 'Block nur einmal auf der Seite' );
+t_ok( strpos( $fc, 'id="news"' ) < strpos( $fc, '<!-- wp:sgnl/announcements /-->' ), 'Direkt unter den News' );
+t_ok( ! sgnl_ann_insert_front(), 'Steht er unter den News, bleibt er dort' );
+wp_update_post( wp_slash( array( 'ID' => $post_with_link, 'post_content' => $before ) ) );
 t_ok( sgnl_ann_insert_front(), 'Block auf der Startseite eingefügt' );
 $fc = get_post( $post_with_link )->post_content;
-t_ok( strpos( $fc, '<!-- wp:sgnl/announcements /-->' ) < strpos( $fc, 'id="news"' ) && false !== strpos( $fc, '<!-- wp:sgnl/announcements /-->' ), 'Direkt über den News' );
+t_ok( strpos( $fc, 'id="news"' ) < strpos( $fc, '<!-- wp:sgnl/announcements /-->' ) && false !== strpos( $fc, '<!-- wp:sgnl/announcements /-->' ), 'Neu eingefügt: direkt unter den News' );
 t_eq( parse_blocks( $fc )[0]['attrs']['backgroundColor'] ?? '', 'water', 'Erster Abschnitt bleibt unverändert' );
 t_ok( ! sgnl_ann_insert_front(), 'Kein zweites Einfügen' );
 $urls[] = wp_make_link_relative( get_permalink( $anns[1] ) );

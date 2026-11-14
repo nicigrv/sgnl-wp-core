@@ -213,9 +213,9 @@ const fail = (m) => { console.log('  FAIL ' + m); failed++; };
     await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
     const order = await page.evaluate(() => {
       const a = document.getElementById('ankuendigungen'), n = document.getElementById('news');
-      return a && n ? a.getBoundingClientRect().top < n.getBoundingClientRect().top && a.nextElementSibling === n : null;
+      return a && n ? n.getBoundingClientRect().top < a.getBoundingClientRect().top && n.nextElementSibling === a : null;
     });
-    order ? ok('Startseite: Ankündigungen direkt über den News') : fail('Startseite: Ankündigungen nicht direkt über den News (' + order + ')');
+    order ? ok('Startseite: Ankündigungen direkt unter den News') : fail('Startseite: Ankündigungen nicht direkt unter den News (' + order + ')');
     const sec = page.locator('#ankuendigungen');
     if (await sec.count()) { await sec.screenshot({ path: path.join(SHOTS, 'ankuendigungen-desktop.png') }); }
     await page.setViewportSize({ width: 390, height: 844 });
