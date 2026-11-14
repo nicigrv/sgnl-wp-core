@@ -580,7 +580,7 @@ if ( function_exists( 'sgnl_first_section_color' ) ) {
  * ====================================================================== */
 $urls = array_merge( array( '/', '/terminplan/', '/archiv/archiv-' . $y2 . '/', '/wp-json/sgnl/v1/live', '/?sgnl-terminplan=pdf' ), $urls );
 file_put_contents( __DIR__ . '/ci/urls.txt', implode( "\n", $urls ) . "\n" );
-$ids = array( $tp_page, $archiv_page, $root->ID, $yp->ID, $dlp->ID, $db->ID, $post_with_link, $tp_id, $teams, $anns[1]->ID );
+$ids = array( $tp_page, $archiv_page, $root->ID, $yp->ID, $dlp->ID, $db->ID, $post_with_link, $tp_id, $anns[1]->ID, $teams ); // Mannschaften muss am Ende stehen (e2e)
 file_put_contents( __DIR__ . '/ci/editor-ids.txt', implode( ' ', $ids ) . "\n" );
 
 $t = $GLOBALS['sgnl_t'];
