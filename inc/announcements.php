@@ -209,7 +209,7 @@ function sgnl_ann_card( WP_Post $p ) {
 	$h = '<article class="sgnl-ann__card">';
 	$h .= '<div class="sgnl-ann__head">';
 	if ( $ts ) {
-		$h .= '<time class="sgnl-ann__tile" datetime="' . esc_attr( $date ) . '"><span class="sgnl-ann__day">' . esc_html( sgnl_ann_date( $date, 'j' ) ) . '</span><span class="sgnl-ann__month">' . esc_html( sgnl_ann_date( $date, 'M' ) ) . '</span></time>';
+		$h .= '<time class="sgnl-ann__tile" datetime="' . esc_attr( $date ) . '"><span class="sgnl-ann__day">' . esc_html( sgnl_ann_date( $date, 'j' ) ) . '</span><span class="sgnl-ann__month">' . esc_html( rtrim( sgnl_ann_date( $date, 'M' ), '.' ) ) . '</span></time>';
 	}
 	$h .= '<div class="sgnl-ann__titles">';
 	if ( '' !== $m['_sgnl_ann_label'] ) {
